@@ -1,0 +1,43 @@
+# CI Pipeline — Agentic Ready Repo Template
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════
+  # Stage 1: Unit Tests (pytest)
+  # ═══════════════════════════════════════════════════════════════
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - run: python3 -m pytest service/tests/ -v
+
+  # ═══════════════════════════════════════════════════════════════
+  # Stage 2: Build + Docker E2E
+  # ═══════════════════════════════════════════════════════════════
+  e2e:
+    name: Docker E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [unit]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start service
+        run: docker compose up -d --build
+      - name: Smoke test via health check
+        run: docker compose exec service python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+      - name: Bats E2E
+        run: |
+          sudo apt-get install -y bats
+          bats tests/e2e/

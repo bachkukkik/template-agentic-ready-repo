@@ -1,0 +1,9 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY . .
+
+RUN pip install --no-cache-dir pytest
+
+EXPOSE 8000
+CMD ["python", "-m", "src.main"]
