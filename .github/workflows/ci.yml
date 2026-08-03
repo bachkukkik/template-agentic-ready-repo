@@ -39,5 +39,9 @@ jobs:
         run: docker compose exec service python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
       - name: Bats E2E
         run: |
-          sudo apt-get install -y bats
+          # Install bats from source — apt's bats is in universe, which act's
+          # local runner image lacks. Source install works on both act and
+          # GitHub-hosted ubuntu-latest.
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats
+          sudo /tmp/bats/install.sh /usr/local
           bats tests/e2e/
