@@ -7,10 +7,13 @@
 ## Read First
 
 1. `PRD.md` — master product requirements index → topic PRDs in `docs/prd/`
-2. `kb/concepts/` — knowledge base (canonical architecture, data models, decisions)
-3. `README.md` — quick start, services, development commands
+2. `docs/NN-slug.md` — empirical status docs (what actually works / fails). See *Planned vs Working* below.
+3. `kb/concepts/` — knowledge base (canonical architecture, data models, decisions)
+4. `README.md` — quick start, services, development commands
 
 > **Source-of-truth doctrine (from PRD.md):** KB wins on semantics/behaviour; repo artifacts win on literal values; top-level PRD wins over detail PRDs.
+
+> **Planned vs Working doctrine:** `docs/prd/` states *intent* (what we plan to build); `docs/NN-slug.md` records *verified reality* (what works, what fails, the net verdict). When the two diverge, the PRD wins on intent and the NN doc wins on behaviour. Every substantive change MUST consult the relevant NN doc and update it via the `coding-agents-docs-guideline` skill — never edit `docs/NN-slug.md` without that skill loaded.
 
 ---
 
@@ -71,8 +74,9 @@ use opencode-plan-build-orchestrator skill for all coding tasks.
 
 | Phase | Skill | Output |
 |-------|-------|--------|
-| PRD / triage / success criteria / verification policy | `pm` (`create-prd`, `intended-vs-implemented`) | `PRD.md` section |
+| PRD / triage / success criteria / verification policy | `pm` (see README for source) | `PRD.md` section |
 | Codebase & resource investigation | `karpathy-guidelines` | Evidence-based gap report |
+| Empirical doc authoring (planned vs working) | `coding-agents-docs-guideline` | `docs/NN-slug.md` |
 | Task delegation | `kanban` / `delegate_task` | Kanban cards (with `skills=[...]`) |
 | All coding | `opencode-plan-build-orchestrator` | plan → build → verify via subagents |
 
@@ -186,13 +190,13 @@ locally via Docker               all jobs must pass
 ├── kb/                 # Knowledge base (authoritative semantics)
 │   ├── SCHEMA.md       # KB schema and conventions
 │   ├── index.md        # Concept index
-│   ├── concepts/       # Architecture, data models, decisions
-│   │   └── example.md
-│   ├── entities/       # External services, vendors, integrations
-│   └── raw/            # Raw research, imported articles
-├── docs/               # PRDs and project documentation
+│   └── concepts/       # Architecture, data models, decisions (add as needed)
+├── docs/               # Two doc layers — intent + verified reality
+│   ├── NN-slug.md      # Empirical status docs (What/Why/How/Verification/
+│   │                   # What Works/What Fails/Resolution/Verdict).
+│   │                   # Author/edit ONLY via coding-agents-docs-guideline skill.
 │   └── prd/
-│       └── 01-example-topic.md    # Example PRD with SC pattern
+│       └── 01-example-topic.md    # Topic PRDs with SC + test mapping (intent)
 ├── tests/              # Three-tier test suite
 │   ├── run.sh          # Master test runner
 │   ├── unit/           # Unit + component tests
