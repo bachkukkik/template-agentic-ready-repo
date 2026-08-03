@@ -17,7 +17,7 @@ SERVICE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def service():
     """Start the service in a subprocess, yield, then stop it."""
     proc = subprocess.Popen(
-        ["python", "-m", "src.main"],
+        ["python3", "-m", "src.main"],
         cwd=SERVICE_DIR,
         env={**os.environ, "PORT": "18000"},
         stdout=subprocess.PIPE,
