@@ -66,27 +66,11 @@ only when the version must travel with the repo.
 
 ---
 
-## Orchestration Pipeline (coding-agent entry point)
+## The `/goal` Orchestration Workflow (coding-agent entry point)
 
-Every substantive request runs **kickoff, then `sub1` → `sub4`, in order**.
+Every substantive request is driven through the `/goal` pipeline. The coding agent MUST capture and follow this sequence.
 
-- On Hermes: `/goal <request>`, then the `sub1`–`sub4` prompts below.
-- On any other harness: the phase labels are the contract. **"go through sub1-4"** is a
-  valid instruction on every harness — expand it to the four phases below and run them
-  in order, reporting each phase's *Done when* before starting the next.
-
-| # | Phase | Do | Done when |
-|---|-------|----|-----------|
-| kickoff | Triage | Triage the request, write/refresh the PRD section, define success criteria + verification policy | SC list exists with `_Verify:_` annotations |
-| `sub1` | Docs/tests gap sync | Diff `docs/` and `tests/` against the codebase; update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks |
-| `sub2` | Local CI | Run the GitHub Actions workflows locally with [`nektos/act`](https://github.com/nektos/act) | `act push` green |
-| `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
-| `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
-
-If a phase surfaces a problem, re-enter kickoff triage for that problem before continuing.
-
-<details>
-<summary><b>Verbatim prompt blocks</b> (copy-paste; drop the <code>/goal</code> line on non-Hermes harnesses)</summary>
+**Kickoff prompt:**
 
 ```
 /goal <whatever user request>
@@ -96,6 +80,8 @@ use karpathy skill for codebase investigation and all resource analysis
 prioritize task delegation over direct execution
 use opencode-plan-build-orchestrator skill for all coding tasks
 ```
+
+**Subsequent prompts (run in order):**
 
 ```
 ## sub1 — docs/tests gap sync
@@ -133,7 +119,23 @@ prioritize task delegation over direct execution.
 use opencode-plan-build-orchestrator skill for all coding tasks.
 ```
 
-</details>
+### Running the pipeline without `/goal`
+
+`/goal` is a Hermes slash command. Harnesses that lack it run the **same** pipeline by
+prompting the phases in order — the `sub1`–`sub4` labels are the cross-harness contract,
+so **"go through sub1-4"** is a valid instruction everywhere. Paste the blocks above
+verbatim (drop the `/goal` line), or work from this table:
+
+| # | Phase | Do | Done when |
+|---|-------|----|-----------|
+| kickoff | Triage | Triage the request, write/refresh the PRD section, define success criteria + verification policy | SC list exists with `_Verify:_` annotations |
+| `sub1` | Docs/tests gap sync | Diff `docs/` and `tests/` against the codebase; update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks |
+| `sub2` | Local CI | Run the GitHub Actions workflows locally with [`nektos/act`](https://github.com/nektos/act) | `act push` green |
+| `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
+| `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
+
+Report each phase's *Done when* before starting the next. If a phase surfaces a problem,
+re-enter kickoff triage for that problem before continuing.
 
 **Skill-to-phase mapping** (install per README; substitute equivalents your harness ships):
 
