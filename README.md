@@ -29,7 +29,12 @@ act push
 
 ```
 .
-├── AGENTS.md              # Agent instructions (read first)
+├── AGENTS.md              # Agent instructions (read first) — CANONICAL
+├── CLAUDE.md              # symlink → AGENTS.md
+├── .agents/               # Repo-scoped agent assets — CANONICAL
+│   ├── skills/            # Skills pinned to this repo
+│   └── plugins/           # Plugins pinned to this repo
+├── .claude/               # skills, plugins → symlinks into ../.agents/
 ├── PRD.md                 # Master PRD → topic PRDs in docs/prd/
 ├── README.md              # This file
 ├── .env.example           # Environment variable template
@@ -53,8 +58,31 @@ act push
 │   ├── e2e/               # E2E (bats)
 │   └── integration/       # Integration tests
 ├── scratchpads/           # Agent scratch space (gitignored)
-└── .github/workflows/     # CI pipeline
+└── .github/
+    ├── copilot-instructions.md  # symlink → ../AGENTS.md
+    └── workflows/         # CI pipeline
 ```
+
+## Harness Support
+
+`AGENTS.md` is the one instruction file. Harness entry points are symlinks to it, so
+adding a harness never forks the content:
+
+| Harness | Entry point | Skills dir |
+|---|---|---|
+| Hermes | `AGENTS.md` (native) | `~/.hermes/skills/` or `.agents/skills/` |
+| Claude Code | `CLAUDE.md` → `AGENTS.md` | `.claude/skills` → `.agents/skills` |
+| Copilot | `.github/copilot-instructions.md` → `AGENTS.md` | vendor dir → `.agents/skills` |
+| Anything else | read `AGENTS.md` directly | paste `SKILL.md` into the prompt |
+
+```bash
+# Add a harness
+ln -s AGENTS.md <entry-file>
+ln -s ../.agents/skills <vendor-dir>/skills
+```
+
+**Windows:** run `git config core.symlinks true` before cloning, or the symlinks
+land as plain text files holding a path and every entry point breaks.
 
 ## Testing
 
@@ -71,9 +99,14 @@ bats tests/e2e/
 
 ## Recommended Agent Skills
 
-AGENTS.md mandates several skills across its `/goal` workflow and Standing
-Orders. None are vendored into this template — install them at HOST level into
-your agent's skill directory (e.g. `~/.hermes/skills/`, `~/.claude/skills/`).
+AGENTS.md mandates several skills across its orchestration pipeline and Standing
+Orders. None are vendored into this template. Two install targets:
+
+- **Host level (default)** — `~/.hermes/skills/`, `~/.claude/skills/`. Shared across
+  all your repos.
+- **Repo level** — `.agents/skills/`, reachable from every harness via its symlink.
+  Use when the skill version must travel with the repo.
+
 **Always install from a neutral cwd (`cd ~` or `cd /tmp`), never from inside
 this repo**, so auto-detecting installers do not pollute the working tree.
 
@@ -104,24 +137,35 @@ agent's skill format manually. Sub-bundles of interest:
 | `pm-product-strategy` | `strategy`, `value-proposition`, `pricing`, `market-scan`, `business-model` |
 | `pm-ai-shipping` | `derive-tests`, `document-app`, `ship-check`, `security-audit-static`, `performance-audit-static` |
 
-### Hermes install example (one skill)
+### Install example (one skill)
+
+Set `SKILL_ROOT` to your harness's skill directory, then the steps are identical:
+
+| Target | `SKILL_ROOT` | Verify command |
+|---|---|---|
+| Hermes (host) | `~/.hermes/skills` | `hermes skills list \| grep <name>` |
+| Claude Code (host) | `~/.claude/skills` | `ls ~/.claude/skills` |
+| This repo (any harness) | `<repo>/.agents/skills` | `ls .claude/skills` — symlink resolves |
 
 ```bash
 # From a neutral cwd — never from inside this repo
+SKILL_ROOT=~/.claude/skills          # or ~/.hermes/skills
 cd /tmp
 git clone --depth 1 --filter=blob:none --sparse https://github.com/openai/skills.git
 cd skills
 git sparse-checkout set skills/.curated/yeet
-mkdir -p ~/.hermes/skills/github/yeet
-cp -r skills/.curated/yeet/{SKILL.md,agents,assets} ~/.hermes/skills/github/yeet/
+mkdir -p "$SKILL_ROOT/yeet"
+cp -r skills/.curated/yeet/{SKILL.md,agents,assets} "$SKILL_ROOT/yeet/"
 ```
 
-Verify each install by listing the target dir and loading the skill:
+Verify by listing the target dir — `SKILL.md` plus its subdirs must be present:
 
 ```bash
-ls ~/.hermes/skills/<category>/<name>/      # SKILL.md + subdirs present?
-hermes skills list | grep <name>            # skill resolves?
+ls "$SKILL_ROOT/yeet/"
 ```
+
+If your harness has no skill mechanism at all, paste the skill's `SKILL.md` into the
+prompt instead. The rules in `AGENTS.md` still apply — a missing tool never waives them.
 
 ### Skill maturity and provenance
 

@@ -1,5 +1,10 @@
 # Agent Instructions — [Project Name]
 
+> **This file is the single source of agent instructions for every harness.**
+> `CLAUDE.md` and `.github/copilot-instructions.md` are **symlinks** to this file —
+> edit `AGENTS.md` only. Repo-scoped skills and plugins live in `.agents/`, with each
+> harness's own directory symlinked to it. See *Harness Adapter* below.
+
 ## What This Is
 
 [One-line description of the project. Stack, purpose, deployment context.]
@@ -17,11 +22,71 @@
 
 ---
 
-## The `/goal` Orchestration Workflow (coding-agent entry point)
+## Harness Adapter
 
-Every substantive request is driven through the `/goal` pipeline. The coding agent MUST capture and follow this sequence.
+This repo is harness-neutral. It is written against **capabilities**, not against any
+one agent product. Every rule below names a capability; each harness supplies its own
+mechanism. If your harness lacks a mechanism, perform the capability manually — a
+missing tool never waives the rule.
 
-**Kickoff prompt:**
+| Capability | Hermes | Claude Code | Copilot / other | Generic fallback |
+|---|---|---|---|---|
+| Entry instruction file | `AGENTS.md` (native) | `CLAUDE.md` (symlink) | `.github/copilot-instructions.md` (symlink) | read `AGENTS.md` manually |
+| Repo-scoped skills / plugins | `.agents/skills`, `.agents/plugins` | same, via `.claude/skills`, `.claude/plugins` symlinks | symlink the vendor dir to `.agents/` | inline the skill's `SKILL.md` into the prompt |
+| Host-level skills | `~/.hermes/skills/` | `~/.claude/skills/` | vendor-specific | — |
+| Sub-agent delegation | `delegate_task` / `kanban` | `Task` tool sub-agents | vendor-specific | do the work inline, in the documented phase order |
+| Plan scratch space | `~/.hermes/plans/*.md` | `scratchpads/` (gitignored) | `scratchpads/` | `scratchpads/` |
+| Pipeline invocation | `/goal <request>` | prompt the phases below in order | prompt the phases below in order | prompt the phases below in order |
+
+**Two symlink families, both pointing at one canonical source.**
+
+Instruction entry points — every one resolves to `AGENTS.md`:
+
+```
+CLAUDE.md                        -> AGENTS.md
+.github/copilot-instructions.md  -> ../AGENTS.md
+```
+
+Skill/plugin roots — `.agents/` is canonical, harness dirs point into it:
+
+```
+.agents/skills/                  # canonical, tracked
+.agents/plugins/                 # canonical, tracked
+.claude/skills                   -> ../.agents/skills
+.claude/plugins                  -> ../.agents/plugins
+```
+
+Adding a harness = two symlinks (`ln -s AGENTS.md <entry-file>` and
+`ln -s ../.agents/skills <vendor-dir>/skills`) plus a row in the table above.
+Never fork the content, never duplicate a skill per harness.
+
+Repo-scoped skills in `.agents/` are for skills this project pins. Everything the
+README lists installs at **host** level by default — vendor into `.agents/skills/`
+only when the version must travel with the repo.
+
+---
+
+## Orchestration Pipeline (coding-agent entry point)
+
+Every substantive request runs **kickoff, then `sub1` → `sub4`, in order**.
+
+- On Hermes: `/goal <request>`, then the `sub1`–`sub4` prompts below.
+- On any other harness: the phase labels are the contract. **"go through sub1-4"** is a
+  valid instruction on every harness — expand it to the four phases below and run them
+  in order, reporting each phase's *Done when* before starting the next.
+
+| # | Phase | Do | Done when |
+|---|-------|----|-----------|
+| kickoff | Triage | Triage the request, write/refresh the PRD section, define success criteria + verification policy | SC list exists with `_Verify:_` annotations |
+| `sub1` | Docs/tests gap sync | Diff `docs/` and `tests/` against the codebase; update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks |
+| `sub2` | Local CI | Run the GitHub Actions workflows locally with [`nektos/act`](https://github.com/nektos/act) | `act push` green |
+| `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
+| `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
+
+If a phase surfaces a problem, re-enter kickoff triage for that problem before continuing.
+
+<details>
+<summary><b>Verbatim prompt blocks</b> (copy-paste; drop the <code>/goal</code> line on non-Hermes harnesses)</summary>
 
 ```
 /goal <whatever user request>
@@ -31,8 +96,6 @@ use karpathy skill for codebase investigation and all resource analysis
 prioritize task delegation over direct execution
 use opencode-plan-build-orchestrator skill for all coding tasks
 ```
-
-**Subsequent prompts (run in order):**
 
 ```
 ## sub1 — docs/tests gap sync
@@ -70,14 +133,16 @@ prioritize task delegation over direct execution.
 use opencode-plan-build-orchestrator skill for all coding tasks.
 ```
 
-**Skill-to-phase mapping:**
+</details>
+
+**Skill-to-phase mapping** (install per README; substitute equivalents your harness ships):
 
 | Phase | Skill | Output |
 |-------|-------|--------|
 | PRD / triage / success criteria / verification policy | `pm` (see README for source) | `PRD.md` section |
 | Codebase & resource investigation | `karpathy-guidelines` | Evidence-based gap report |
 | Empirical doc authoring (planned vs working) | `coding-agents-docs-guideline` | `docs/NN-slug.md` |
-| Task delegation | `kanban` / `delegate_task` | Kanban cards (with `skills=[...]`) |
+| Task delegation | harness delegation mechanism (see adapter table) | Scoped sub-agent tasks |
 | All coding | `opencode-plan-build-orchestrator` | plan → build → verify via subagents |
 
 ---
@@ -101,9 +166,10 @@ Load and use these skills on EVERY task:
 
 ### 2. Delegation Rules (coding discipline)
 
-- **Every `delegate_task` call for coding work MUST include** `opencode-plan-build-orchestrator` and `karpathy-guidelines` in the subagent's goal context.
-- **The orchestrator parent NEVER writes repo-tracked files directly** — all code edits go to subagents. Investigation, planning, PRD authoring, and `~/.hermes/plans/*.md` stay with the parent.
+- **Every delegated coding task MUST include** `opencode-plan-build-orchestrator` and `karpathy-guidelines` in the subagent's goal context — whatever the harness calls its delegation mechanism (see adapter table).
+- **The orchestrator parent NEVER writes repo-tracked files directly** — all code edits go to subagents. Investigation, planning, PRD authoring, and plan scratch files stay with the parent.
 - For docs-only tasks, the parent does the edits directly.
+- **If the harness has no delegation mechanism**, the parent does the coding itself but still runs plan → build → verify as three distinct, separately-reported steps.
 
 ### 3. Code Quality Rules
 
@@ -182,7 +248,12 @@ locally via Docker               all jobs must pass
 
 ```
 .
-├── AGENTS.md           # This file — agent instructions (read first)
+├── AGENTS.md           # This file — agent instructions (read first). CANONICAL.
+├── CLAUDE.md           # symlink → AGENTS.md (Claude Code entry point)
+├── .agents/            # Repo-scoped agent assets — CANONICAL
+│   ├── skills/         # Skills pinned to this repo
+│   └── plugins/        # Plugins pinned to this repo
+├── .claude/            # skills, plugins → symlinks into ../.agents/
 ├── PRD.md              # Master PRD index → topic PRDs in docs/prd/
 ├── README.md           # Quick start, services, dev commands
 ├── .env.example        # Environment variable template
@@ -204,9 +275,13 @@ locally via Docker               all jobs must pass
 │   └── integration/    # Integration tests
 ├── scratchpads/        # Agent scratch space (gitignored except .gitkeep)
 └── .github/
+    ├── copilot-instructions.md  # symlink → ../AGENTS.md
     └── workflows/
         └── ci.yml      # CI pipeline definition
 ```
+
+> **Symlinks require `git config core.symlinks true`** (default off on Windows). Without
+> it, clones get plain text files containing a path, and every harness entry point breaks.
 
 ## Development Commands
 

@@ -46,6 +46,11 @@ htmlcov/
 scratchpads/*
 !scratchpads/.gitkeep
 
+# === Harness-local dirs — the symlinks into .agents/ are tracked, runtime state is not ===
+.claude/*
+!.claude/skills
+!.claude/plugins
+
 # === Knowledge base (agent-generated, not tracked) ===
 kb/*
 !kb/.gitkeep
