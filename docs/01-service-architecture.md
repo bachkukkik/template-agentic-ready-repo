@@ -111,4 +111,4 @@ All commands must return exit code 0. The test runner reports `3 passed` (pytest
 
 ## Verdict
 
-The template repo covers the full agentic development lifecycle with a verified pipeline. The single Python service is intentionally minimal — it exists to prove the test and CI infrastructure works, not to be a production application. Adding new services, tests, or CI stages follows the same documented pattern.
+**partial** — The template repo covers the full agentic development lifecycle with a verified pipeline. The single Python service is intentionally minimal — it exists to prove the test and CI infrastructure works, not to be a production application; the open failures are cold-start flakiness risk, no host port binding, and a stub integration test.

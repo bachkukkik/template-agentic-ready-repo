@@ -11,14 +11,100 @@
 
 ## Read First
 
-1. `PRD.md` — master product requirements index → topic PRDs in `docs/prd/`
-2. `docs/NN-slug.md` — empirical status docs (what actually works / fails). See *Planned vs Working* below.
-3. `kb/concepts/` — knowledge base (canonical architecture, data models, decisions)
-4. `README.md` — quick start, services, development commands
+1. *Document Funnel* below — where any piece of writing is allowed to live. Read before writing anything.
+2. `PRD.md` — master product requirements index → topic PRDs in `docs/prd/`
+3. `docs/README.md` — verdict catalog for the empirical layer → `docs/NN-slug.md` (what actually works / fails). See *Planned vs Working* below.
+4. `kb/index.md` — knowledge base catalog (canonical semantics, architecture, data models, decisions)
+5. `README.md` — quick start, services, development commands
+
+> **Three indexes, three layers, no overlap:** `kb/index.md` catalogs knowledge (stage 3),
+> `PRD.md` catalogs intent (stage 4), `docs/README.md` catalogs verified reality (stage 6).
+> Same `NN` number for one topic across `docs/prd/`, `docs/gaps/`, and `docs/`.
 
 > **Source-of-truth doctrine (from PRD.md):** KB wins on semantics/behaviour; repo artifacts win on literal values; top-level PRD wins over detail PRDs.
 
 > **Planned vs Working doctrine:** `docs/prd/` states *intent* (what we plan to build); `docs/NN-slug.md` records *verified reality* (what works, what fails, the net verdict). When the two diverge, the PRD wins on intent and the NN doc wins on behaviour. Every substantive change MUST consult the relevant NN doc and update it via the `coding-agents-docs-guideline` skill — never edit `docs/NN-slug.md` without that skill loaded.
+
+---
+
+## Document Funnel (MANDATORY — every harness, every agent)
+
+Writing flows in **one direction only**. Each stage narrows and hardens what the stage
+above it produced. Every agent MUST know which stage its output belongs to *before*
+writing, and MUST NOT skip a stage.
+
+```
+user prompt (desire + imagination, any harness)
+   │
+   ▼
+scratchpads/            playground, quick notes, memos, dumps   [gitignored, deletable]
+   │  what survives scrutiny and is a source document
+   ▼
+kb/raw/                 immutable source material               [add-only, never edit]
+   │  /llm-wiki ./kb/   (synthesis step — never hand-write kb/ layer-2 pages)
+   ▼
+kb/                     confirmed knowledge, fitted to repo purpose
+   │  grounds
+   ▼
+PRD.md + docs/prd/      intent — what we plan to build
+   │  compared against kb/ and against the codebase
+   ▼
+docs/gaps/              gap observations (kb ↔ prd, prd ↔ code)
+   │  drives change; change gets verified
+   ▼
+docs/<NN-topic>.md      empirical observation — what actually works / fails
+   │
+   ▼
+anything else           GitHub issue, or a comment on an existing issue
+```
+
+| # | Stage | Path | Contains | Mutability | Written with |
+|---|-------|------|----------|------------|--------------|
+| 0 | Prompt | — | User's desire and imagination, any harness | ephemeral | — |
+| 1 | Scratch | `scratchpads/` | Playgrounds, quick notes, memos, throwaway analysis | free-for-all; **gitignored, deletable at any time** | any tool |
+| 2 | Raw knowledge | `kb/raw/` | Immutable source documents about the project — any format (articles, papers, transcripts, assets) | **add new files or archive; never edit in place** | manual capture / ingest |
+| 3 | Knowledge | `kb/` (`concepts/`, `entities/`, `comparisons/`, `queries/`, `index.md`, `log.md`) | Confirmed knowledge, synthesized and fitted to repo purpose | agent-owned; regenerated from `kb/raw/` | **`/llm-wiki ./kb/` only** |
+| 4 | Intent | `PRD.md`, `docs/prd/NN-*.md` | Requirements, success criteria, test mapping, CI gate | edit freely, must stay grounded in `kb/` | `pm` skill |
+| 5 | Gaps | `docs/gaps/NN-*.md` | Observed divergence: kb ↔ prd, or prd ↔ codebase | short-lived; closed when resolved | `karpathy-guidelines` |
+| 6 | Reality | `docs/NN-slug.md` + `docs/README.md` | Empirical observation — What/Why/How/Verification/What Works/What Fails/Resolution/Verdict; `README.md` is the verdict catalog | append/update per verified run | **`coding-agents-docs-guideline` only** |
+| 7 | Everything else | GitHub issues | Anything that fits no stage above | issue thread | `gh` CLI |
+
+### Funnel rules
+
+1. **No stray documents.** A new `.md` outside stages 1–6 is a defect. No `NOTES.md`,
+   no `TODO.md`, no `ANALYSIS.md` at repo root. If it fits no stage, it is an
+   **issue** — file one, or comment on the existing one.
+2. **Grounding direction is downward.** A stage may only assert what an upstream stage
+   supports. A PRD claim with no `kb/` backing is `[ASSUMPTION]`-marked or dropped. A
+   `docs/NN-slug.md` claim with no verification command is not a claim.
+3. **`kb/raw/` is append-or-archive.** Never rewrite a raw source. Superseded raw files
+   move to `kb/_archive/` preserving their path.
+4. **`kb/` layer-2 pages are never hand-written.** Update `kb/raw/`, then run
+   `/llm-wiki ./kb/`. Follow the llm-wiki spec strictly:
+   <https://github.com/NousResearch/hermes-agent/blob/main/skills/research/llm-wiki/SKILL.md>
+5. **Unused knowledge is archived, not deleted.** `kb/_archive/` is the terminus for
+   stage 2 and 3 material — remove from `index.md`, replace inbound wikilinks with
+   plain text + "(archived)", log the action in `kb/log.md`.
+6. **`scratchpads/` is never cited.** No tracked document may reference a scratchpad
+   path as evidence — promote the content to `kb/raw/` first.
+7. **Gaps are transient.** A `docs/gaps/` file closes by producing one of: a `kb/raw/`
+   ingest, a PRD edit, a code change with tests, or an issue. State which in its
+   *Resolution* section, then it may be archived out of the repo.
+8. **Skill gates are absolute.** Stage 3 requires `llm-wiki`; stage 6 requires
+   `coding-agents-docs-guideline`. No harness mechanism for a skill = paste its
+   `SKILL.md` into the prompt and follow it manually. A missing tool never waives the gate.
+
+### Where does this text go?
+
+| If the writing is… | It goes to |
+|---|---|
+| A hunch, a scratch calculation, a paste buffer | `scratchpads/` |
+| An external doc / spec / transcript that describes the project | `kb/raw/` |
+| A stable fact about how this project works | `kb/raw/` → `/llm-wiki ./kb/` |
+| A thing we want to build | `docs/prd/` |
+| "The PRD says X but the code does Y" | `docs/gaps/` |
+| "I ran it; here is what worked and what failed" | `docs/NN-slug.md` |
+| A bug, a question, a decision to revisit | GitHub issue / issue comment |
 
 ---
 
@@ -37,6 +123,8 @@ missing tool never waives the rule.
 | Sub-agent delegation | `delegate_task` / `kanban` | `Task` tool sub-agents | vendor-specific | do the work inline, in the documented phase order |
 | Plan scratch space | `~/.hermes/plans/*.md` | `scratchpads/` (gitignored) | `scratchpads/` | `scratchpads/` |
 | Pipeline invocation | `/goal <request>` | prompt the phases below in order | prompt the phases below in order | prompt the phases below in order |
+| KB synthesis (funnel stage 3) | `/llm-wiki ./kb/` (native skill) | invoke `llm-wiki` skill on `./kb/` | invoke `llm-wiki` skill on `./kb/` | inline llm-wiki `SKILL.md`, apply its workflow to `./kb/` by hand |
+| Issue tracking (funnel stage 7) | `gh issue create` / `gh issue comment` | same | same | same |
 
 **Two symlink families, both pointing at one canonical source.**
 
@@ -128,8 +216,8 @@ verbatim (drop the `/goal` line), or work from this table:
 
 | # | Phase | Do | Done when |
 |---|-------|----|-----------|
-| kickoff | Triage | Triage the request, write/refresh the PRD section, define success criteria + verification policy | SC list exists with `_Verify:_` annotations |
-| `sub1` | Docs/tests gap sync | Diff `docs/` and `tests/` against the codebase; update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks |
+| kickoff | Triage | Triage the request, ingest any new source material to `kb/raw/` + run `/llm-wiki ./kb/`, write/refresh the PRD section grounded in `kb/`, define success criteria + verification policy | SC list exists with `_Verify:_` annotations, each traceable to a `kb/` page |
+| `sub1` | Docs/tests gap sync | Diff `kb/` ↔ `docs/prd/` ↔ codebase ↔ `tests/`; record divergences in `docs/gaps/`, update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks; every `docs/gaps/` file has a Resolution |
 | `sub2` | Local CI | Run the GitHub Actions workflows locally with [`nektos/act`](https://github.com/nektos/act) | `act push` green |
 | `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
 | `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
@@ -141,8 +229,9 @@ re-enter kickoff triage for that problem before continuing.
 
 | Phase | Skill | Output |
 |-------|-------|--------|
+| Knowledge synthesis (funnel stage 3) | `llm-wiki` via `/llm-wiki ./kb/` | `kb/` layer-2 pages + `index.md` + `log.md` |
 | PRD / triage / success criteria / verification policy | `pm` (see README for source) | `PRD.md` section |
-| Codebase & resource investigation | `karpathy-guidelines` | Evidence-based gap report |
+| Codebase & resource investigation | `karpathy-guidelines` | Evidence-based gap report → `docs/gaps/NN-*.md` |
 | Empirical doc authoring (planned vs working) | `coding-agents-docs-guideline` | `docs/NN-slug.md` |
 | Task delegation | harness delegation mechanism (see adapter table) | Scoped sub-agent tasks |
 | All coding | `opencode-plan-build-orchestrator` | plan → build → verify via subagents |
@@ -162,7 +251,8 @@ Load and use these skills on EVERY task:
 | `karpathy-guidelines` | ALWAYS | Research context, clean code, surface assumptions |
 | `security-best-practices` | ALWAYS | All code changes must follow security best practices |
 | `webapp-testing` | Testing | Write and run comprehensive tests |
-| `coding-agents-docs-guideline` | Docs | Document all changes in the repo |
+| `coding-agents-docs-guideline` | Docs | Author/edit `docs/NN-slug.md` — funnel stage 6. Required, no exceptions |
+| `llm-wiki` | KB | Synthesize `kb/` from `kb/raw/` — funnel stage 3. The ONLY writer of `kb/` layer-2 pages |
 | `yeet` | Git ops | All commit/push/branch operations |
 | `opencode-plan-build-orchestrator` | Coding via delegate | All coding tasks MUST route through plan→build→verify |
 
@@ -260,22 +350,35 @@ locally via Docker               all jobs must pass
 ├── README.md           # Quick start, services, dev commands
 ├── .env.example        # Environment variable template
 ├── .gitignore          # Standard ignores for agentic repos
-├── kb/                 # Knowledge base (authoritative semantics)
-│   ├── SCHEMA.md       # KB schema and conventions
-│   ├── index.md        # Concept index
-│   └── concepts/       # Architecture, data models, decisions (add as needed)
-├── docs/               # Two doc layers — intent + verified reality
-│   ├── NN-slug.md      # Empirical status docs (What/Why/How/Verification/
+├── kb/                 # Knowledge base — funnel stages 2-3. llm-wiki layout, strictly.
+│   ├── SCHEMA.md       # KB schema, tag taxonomy, conventions
+│   ├── index.md        # Sectioned catalog — maintained by llm-wiki
+│   ├── log.md          # Append-only action record — maintained by llm-wiki
+│   ├── raw/            # STAGE 2. Immutable sources. Add-only, never edited.
+│   │   ├── articles/   #   web clippings
+│   │   ├── papers/     #   PDFs, specs, academic papers
+│   │   ├── transcripts/#   meetings, interviews
+│   │   └── assets/     #   images, diagrams (KB is multi-format)
+│   ├── concepts/       # STAGE 3. Topics, architecture, decisions
+│   ├── entities/       # STAGE 3. People, orgs, products, external services
+│   ├── comparisons/    # STAGE 3. Side-by-side analyses
+│   ├── queries/        # STAGE 3. Filed query results
+│   └── _archive/       # Superseded raw + pages, path structure preserved
+├── docs/               # Three doc layers — intent, gaps, verified reality
+│   ├── README.md       # STAGE 6 catalog. One row per NN doc: verdict + last verified.
+│   ├── NN-slug.md      # STAGE 6. Empirical status docs (What/Why/How/Verification/
 │   │                   # What Works/What Fails/Resolution/Verdict).
 │   │                   # Author/edit ONLY via coding-agents-docs-guideline skill.
+│   ├── gaps/           # STAGE 5. kb ↔ prd and prd ↔ codebase divergences
+│   │   └── README.md   #   gap doc format + lifecycle
 │   └── prd/
-│       └── 01-example-topic.md    # Topic PRDs with SC + test mapping (intent)
+│       └── 01-example-topic.md    # STAGE 4. Topic PRDs with SC + test mapping (intent)
 ├── tests/              # Three-tier test suite
 │   ├── run.sh          # Master test runner
 │   ├── unit/           # Unit + component tests
 │   ├── e2e/            # E2E tests (bats for infra)
 │   └── integration/    # Integration tests
-├── scratchpads/        # Agent scratch space (gitignored except .gitkeep)
+├── scratchpads/        # STAGE 1. Agent scratch space (gitignored except .gitkeep)
 └── .github/
     ├── copilot-instructions.md  # symlink → ../AGENTS.md
     └── workflows/
