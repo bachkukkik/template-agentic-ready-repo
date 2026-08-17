@@ -2,6 +2,33 @@
 
 > Starter skeleton for agent-driven development. Follows the slash-storefront doctrine: AGENTS.md → PRD.md → kb/ → tests/ → CI.
 
+## Document Funnel
+
+Every piece of writing in this repo has exactly one home. Writing flows one direction
+only — full rules in [AGENTS.md](AGENTS.md#document-funnel-mandatory--every-harness-every-agent).
+
+```
+user prompt (any harness)
+   ▼
+scratchpads/          playground, notes, memos          gitignored, deletable
+   ▼
+kb/raw/               immutable sources, any format     add-only, never edited
+   ▼  /llm-wiki ./kb/
+kb/                   confirmed knowledge               written ONLY by llm-wiki
+   ▼
+PRD.md + docs/prd/    intent, grounded in kb/           pm skill
+   ▼
+docs/gaps/            kb ↔ prd, prd ↔ code divergence   transient, must resolve
+   ▼
+docs/NN-slug.md       what actually works / fails       coding-agents-docs-guideline ONLY
+   ▼
+GitHub issues         everything else
+```
+
+A new `.md` that fits none of these stages is a defect — file an issue instead.
+`kb/` follows the [llm-wiki spec](https://github.com/NousResearch/hermes-agent/blob/main/skills/research/llm-wiki/SKILL.md)
+strictly; unused KB material is archived to `kb/_archive/`, never deleted.
+
 ## Quick Start
 
 ```bash
@@ -44,13 +71,20 @@ act push
 │   ├── Dockerfile
 │   ├── src/main.py        # HTTP server with /health and /
 │   └── tests/test_main.py # pytest (unit + integration)
-├── kb/                    # Knowledge base
-│   ├── SCHEMA.md          # KB conventions
-│   ├── index.md           # Concept index
-│   ├── concepts/          # Architecture decisions
-│   └── entities/          # External services
-├── docs/                # Two doc layers — intent + verified reality
+├── kb/                    # Knowledge base — llm-wiki layout, tracked
+│   ├── SCHEMA.md          # KB conventions + tag taxonomy
+│   ├── index.md           # Page catalog (llm-wiki-maintained)
+│   ├── log.md             # Append-only action record (llm-wiki-maintained)
+│   ├── raw/               # Immutable sources: articles/ papers/ transcripts/ assets/
+│   ├── concepts/          # Architecture, decisions, topics
+│   ├── entities/          # People, orgs, external services
+│   ├── comparisons/       # Side-by-side analyses
+│   ├── queries/           # Filed query results
+│   └── _archive/          # Superseded material (never deleted)
+├── docs/                # Three doc layers — intent, gaps, verified reality
+│   ├── README.md        # Verdict catalog for the NN status docs
 │   ├── NN-slug.md       # Empirical status docs (What/Why/How/Works/Fails/Verdict)
+│   ├── gaps/            # kb ↔ prd and prd ↔ code divergences
 │   └── prd/             # Topic PRDs with SC + test mapping (intent)
 ├── tests/               # Three-tier test suite
 │   ├── run.sh             # Master test runner
@@ -114,6 +148,7 @@ this repo**, so auto-detecting installers do not pollute the working tree.
 |-------|--------|---------------|
 | `opencode-plan-build-orchestrator` | https://github.com/bachkukkik/opencode-plan-build-orchestrator | Plain skill — clone whole repo (SKILL.md + `agents/` + `references/`) |
 | `coding-agents-docs-guideline` | https://github.com/bachkukkik/coding-agents-docs-guideline | Plain skill — clone whole repo (SKILL.md + `examples/`). Required to author or edit any `docs/NN-slug.md` |
+| `llm-wiki` | https://github.com/NousResearch/hermes-agent/tree/main/skills/research/llm-wiki | Plain skill — sparse-checkout `skills/research/llm-wiki`. **The only writer of `kb/` layer-2 pages.** Invoke as `/llm-wiki ./kb/` so it does not default to `~/wiki` |
 | `yeet` | https://github.com/openai/skills/tree/main/skills/.curated/yeet | Plain skill — sparse-checkout `skills/.curated/yeet` (SKILL.md + `agents/` + `assets/`). Requires `gh` CLI authenticated |
 | `security-best-practices` | https://github.com/openai/skills/tree/main/skills/.curated/security-best-practices | Plain skill — sparse-checkout `skills/.curated/security-best-practices` (SKILL.md + `references/`). Python / JS-TS / Go only |
 | `webapp-testing` | https://github.com/anthropics/skills/blob/main/skills/webapp-testing/SKILL.md | Plain skill — sparse-checkout `skills/webapp-testing` (SKILL.md + `scripts/` + `examples/`). Playwright-based |

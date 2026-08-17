@@ -13,6 +13,13 @@ This repository is the **real deployment repository** — the codebase the engin
 
 **Brand:** [Project name]. Tagline: [tagline].
 
+## Funnel Position
+
+This PRD set is **stage 4** of the Document Funnel defined in `AGENTS.md`. It is
+grounded in `kb/` (stage 3) and compared against the codebase in `docs/gaps/`
+(stage 5). Any claim here with no `kb/` page behind it carries `[ASSUMPTION]` or is
+dropped. Verified behaviour is never recorded here — it goes to `docs/NN-slug.md`.
+
 ## Source-of-Truth Doctrine
 
 Three sources feed this PRD set. When they conflict, this doctrine resolves:

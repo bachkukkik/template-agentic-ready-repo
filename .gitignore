@@ -51,11 +51,10 @@ scratchpads/*
 !.claude/skills
 !.claude/plugins
 
-# === Knowledge base (agent-generated, not tracked) ===
-kb/*
-!kb/.gitkeep
-!kb/SCHEMA.md
-!kb/index.md
+# === Knowledge base — TRACKED ===
+# kb/ is funnel stage 2-3 (see AGENTS.md): kb/raw/ is immutable source material and
+# kb/ layer-2 pages ground every PRD. Both must be versioned — unused material is
+# archived to kb/_archive/, never deleted, never ignored. Do not add kb/ ignores here.
 
 # === graphify cache ===
 graphify-out/cache/
