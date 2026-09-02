@@ -126,3 +126,65 @@ jobs:
             exit 1
           fi
           echo "No hardcoded secret assignments."
+
+  # ═══════════════════════════════════════════════════════════════
+  # Guard: the doctrine is intact — entry points resolve, funnel is
+  # tracked (AGENTS.md funnel rules 9-10 + Harness Adapter)
+  # ═══════════════════════════════════════════════════════════════
+  doctrine:
+    name: Doctrine Integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert every harness entry point is a resolving symlink
+        run: |
+          set -euo pipefail
+          fail=0
+          # A plain copy forks AGENTS.md silently; a dangling link breaks the
+          # harness on a fresh clone while still looking committed.
+          for link in CLAUDE.md .github/copilot-instructions.md .claude/skills .claude/plugins; do
+            if [ ! -L "$link" ]; then
+              echo "::error file=$link::$link is not a symlink. It must point at the canonical source (git config core.symlinks true on Windows)."
+              fail=1
+            elif [ ! -e "$link" ]; then
+              echo "::error file=$link::$link is a dangling symlink -> $(readlink "$link"). Its target is missing or gitignored."
+              fail=1
+            fi
+          done
+          if [ "$fail" -eq 0 ]; then echo "All harness entry points resolve."; fi
+          exit "$fail"
+
+      - name: Assert the document funnel is tracked, not ignored
+        run: |
+          set -euo pipefail
+          fail=0
+          for path in AGENTS.md PRD.md README.md .agents .github docs kb tests; do
+            if [ -z "$(git ls-files -- "$path")" ]; then
+              echo "::error::$path is not tracked. The document funnel only works if it is versioned (AGENTS.md funnel rule 10)."
+              fail=1
+            fi
+            if git check-ignore -q "$path"; then
+              echo "::error::$path is matched by a .gitignore rule. Remove the ignore (AGENTS.md funnel rule 10)."
+              fail=1
+            fi
+          done
+          if [ "$fail" -eq 0 ]; then echo "Document funnel fully tracked."; fi
+          exit "$fail"
+
+      - name: Assert no secret values landed in kb/
+        run: |
+          set -euo pipefail
+          # Funnel rule 9: kb/raw/ is add-only, so a leak there is not editable out.
+          # Reference that a secret exists and where it is configured, never the value.
+          hits=$(git ls-files 'kb/**' \
+            | xargs -r grep -nEi \
+              "(client_secret|access_token|refresh_token|bot_token|api_key|hook_secret|password)[\"']?[[:space:]]*[:=][[:space:]]*[\"'][A-Za-z0-9/_.+-]{12,}[\"']" \
+            || true)
+          if [ -n "$hits" ]; then
+            echo "::error::a secret-shaped value appears under kb/ (funnel rule 9)"
+            echo "$hits"
+            exit 1
+          fi
+          echo "No secret values under kb/."

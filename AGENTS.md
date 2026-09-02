@@ -95,6 +95,16 @@ anything else           GitHub issue, or a comment on an existing issue
 8. **Skill gates are absolute.** Stage 3 requires `llm-wiki`; stage 6 requires
    `coding-agents-docs-guideline`. No harness mechanism for a skill = paste its
    `SKILL.md` into the prompt and follow it manually. A missing tool never waives the gate.
+9. **Never write a secret into `kb/`.** `kb/` is tracked, and `kb/raw/` is add-only by
+   rule 3 — a credential that lands there cannot simply be edited out. When a source
+   document carries live values (a webhook spec from `.credentials/`, an API response
+   with a token), record *that the secret exists and where it is configured*, never the
+   value. Redact before the file enters `kb/raw/`, not after.
+10. **The doctrine itself is tracked.** `AGENTS.md`, `PRD.md`, `docs/`, `kb/`, `tests/`,
+   `.agents/`, `.github/` and the harness symlinks are versioned artifacts, not local
+   scaffolding. A `.gitignore` entry that hides any of them empties the funnel for every
+   agent working from a fresh clone. Enforced by the `doctrine` job in
+   `.github/workflows/ci.yml`.
 
 ### Where does this text go?
 
@@ -233,7 +243,7 @@ verbatim (drop the `/goal` line), or work from this table:
 |---|-------|----|-----------|
 | kickoff | Triage | Triage the request, ingest any new source material to `kb/raw/` + run `llm-wiki ./kb/`, write/refresh the PRD section grounded in `kb/`, define success criteria + verification policy | SC list exists with `_Verify:_` annotations, each traceable to a `kb/` page |
 | `sub1` | Docs/tests gap sync | Diff `kb/` ↔ `docs/prd/` ↔ codebase ↔ `tests/`; record divergences in `docs/gaps/`, update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks; every `docs/gaps/` file has a Resolution |
-| `sub2` | Local CI | Run the workflows locally with [`nektos/act`](https://github.com/nektos/act) — `-j unit`, `-j integration`, `-j secret-scan`; E2E runs directly, not under act (see §6) | those three jobs green + `bash tests/run.sh --with-e2e` green |
+| `sub2` | Local CI | Run the workflows locally with [`nektos/act`](https://github.com/nektos/act) — `-j unit`, `-j integration`, `-j secret-scan`, `-j doctrine`; E2E runs directly, not under act (see §6) | those four jobs green + `bash tests/run.sh --with-e2e` green |
 | `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
 | `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
 
@@ -347,6 +357,13 @@ actually executed by `tests/run.sh` and by a CI job — a tier with no runner is
 - E2E — `tests/e2e/` (bats, against a running container)
 - Integration — `tests/integration/` (cross-process / persistence)
 
+**A test that writes to shared infrastructure is opt-in.** If the integration tier
+talks to a real broker, a shared database, or any stack another team also uses, it
+must not run by default: set `INTEGRATION_NEEDS_OPT_IN=1` in `tests/run.sh`, and the
+tier then only runs with `RUN_INTEGRATION_TESTS=1` in the environment. Default-on is
+correct only while every integration test is hermetic. This is the same hazard as the
+`act push` warning in §6 — a local verification run that mutates live state.
+
 ### 6. CI/CD Pipeline — Local-First, Then Remote
 
 ```
@@ -368,7 +385,7 @@ locally via Docker               all jobs must pass
 > containers**. The job also tends not to pass under `act`: compose talks to the host
 > daemon while act's steps run inside a container, so anything the workflow seeds on
 > disk lands where the bind mount does not resolve. Locally run
-> `act push -j unit`, `-j integration`, `-j secret-scan`, and exercise the E2E tier
+> `act push -j unit`, `-j integration`, `-j secret-scan`, `-j doctrine`, and exercise the E2E tier
 > directly with `docker compose up -d --build && bash tests/run.sh --with-e2e` from a
 > checkout that is not the deployment.
 
@@ -376,8 +393,14 @@ Two workflows gate this repo:
 
 | Workflow | Gates |
 |---|---|
-| `.github/workflows/ci.yml` | unit → integration → e2e (Docker), plus a secret scan |
+| `.github/workflows/ci.yml` | unit → integration → e2e (Docker), plus a secret scan and the `doctrine` job |
 | `.github/workflows/sources-readonly.yml` | `kb/raw/**` is add-only; edits need the `ingest` label (funnel rule 3) |
+
+The `doctrine` job is the structural half of the Harness Adapter: it fails the build if
+a harness entry point is a plain copy or a dangling symlink, or if a `.gitignore` rule
+hides a funnel stage (rules 9–10). Both are silent failures otherwise — a forked
+`CLAUDE.md` drifts from `AGENTS.md` with nothing to notice it, and a `.claude/skills`
+symlink pointing at an absent `.agents/` is committed and cloned intact.
 
 ---
 
@@ -430,7 +453,7 @@ Two workflows gate this repo:
 └── .github/
     ├── copilot-instructions.md  # symlink → ../AGENTS.md
     └── workflows/
-        ├── ci.yml                 # unit → integration → e2e + secret scan
+        ├── ci.yml                 # unit → integration → e2e + secret scan + doctrine
         └── sources-readonly.yml   # kb/raw/** add-only gate
 ```
 
@@ -454,7 +477,9 @@ act push -j unit && act push -j integration && act push -j secret-scan
 ## Security
 
 - Never commit `.env`, API keys, or JWT secrets — only `.example` shapes are tracked
-- All credentials via env vars or a gitignored credentials directory, never hardcoded
+- All credentials via env vars or `.credentials/` (gitignored), never hardcoded
+- Secrets never enter `kb/` — funnel rule 9; `kb/raw/` is add-only, so a leak there is
+  not editable out
 - Every inbound webhook delivery is signature-verified before its payload is read; a
   sender with no stored secret is rejected, not parsed
 - Signing secrets are keyed per sender, so one sender's secret cannot sign another's

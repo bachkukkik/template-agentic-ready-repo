@@ -5,6 +5,12 @@
 *.pem
 *.key
 
+# Live credential files — real webhook specs, service-account JSON, tokens.
+# Only .example shapes are ever tracked; `secret-scan` in CI enforces that.
+.credentials/*
+!.credentials/*.example
+!.credentials/*.example.json
+
 # === Node.js ===
 node_modules/
 dist/
@@ -52,10 +58,17 @@ scratchpads/*
 !.claude/plugins
 !.claude/agents
 
-# === Knowledge base — TRACKED ===
-# kb/ is funnel stage 2-3 (see AGENTS.md): kb/raw/ is immutable source material and
-# kb/ layer-2 pages ground every PRD. Both must be versioned — unused material is
-# archived to kb/_archive/, never deleted, never ignored. Do not add kb/ ignores here.
+# === The doctrine is TRACKED — do not add ignores for any of these ===
+# AGENTS.md, PRD.md, docs/, kb/, tests/, .agents/, .github/ and the harness symlinks
+# are versioned artifacts, not local scaffolding (AGENTS.md funnel rule 10). kb/ in
+# particular is funnel stage 2-3: kb/raw/ is immutable source material and the layer-2
+# pages ground every PRD — unused material is archived to kb/_archive/, never deleted,
+# never ignored.
+#
+# Ignoring any of them empties the funnel for every agent working from a fresh clone,
+# and leaves the tracked .claude/* symlinks dangling once .agents/ stops being
+# committed. The `doctrine` job in .github/workflows/ci.yml fails the build if it
+# happens, so a local override here will not go unnoticed.
 
 # === graphify cache ===
 graphify-out/cache/
