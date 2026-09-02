@@ -4,6 +4,14 @@
 !.env.example
 *.pem
 *.key
+*.p12
+
+# Live credentials directory — AGENTS.md §Security calls for a *gitignored*
+# credentials dir; this is it. Only `.example` shapes may be tracked, which is
+# what ci.yml's secret-scan job asserts.
+.credentials/*
+!.credentials/*.example
+!.credentials/*.example.*
 
 # === Node.js ===
 node_modules/
