@@ -1,4 +1,9 @@
 # CI Pipeline — Agentic Ready Repo Template
+#
+# Local-first (AGENTS.md §6): run the unit / integration / secret-scan jobs green
+# under `act` before opening a PR. The e2e job builds and starts containers — read
+# the warning in AGENTS.md §6 before running it under `act` on a host that also
+# runs a live deployment of this compose project.
 name: CI
 
 on:
@@ -9,7 +14,7 @@ on:
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
-  # Stage 1: Unit Tests (pytest)
+  # Tier 1: unit — pure logic, no transport, no services
   # ═══════════════════════════════════════════════════════════════
   unit:
     name: Unit Tests
@@ -20,28 +25,104 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pytest
-      - run: python3 -m pytest service/tests/ -v
+      - run: pip install --no-cache-dir -r tests/requirements.txt
+      - run: python3 -m pytest tests/unit -v
 
   # ═══════════════════════════════════════════════════════════════
-  # Stage 2: Build + Docker E2E
+  # Tier 2: integration — cross-process / persistence, no container
+  # ═══════════════════════════════════════════════════════════════
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --no-cache-dir -r tests/requirements.txt
+      - run: python3 -m pytest tests/integration -v
+
+  # ═══════════════════════════════════════════════════════════════
+  # Tier 3: e2e — bats against the running container
   # ═══════════════════════════════════════════════════════════════
   e2e:
     name: Docker E2E
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [unit]
+    needs: [integration]
     steps:
       - uses: actions/checkout@v4
-      - name: Build and start service
+
+      - name: Build and start the service
         run: docker compose up -d --build
-      - name: Smoke test via health check
-        run: docker compose exec service python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
-      - name: Bats E2E
+
+      - name: Wait for health
         run: |
-          # Install bats from source — apt's bats is in universe, which act's
-          # local runner image lacks. Source install works on both act and
-          # GitHub-hosted ubuntu-latest.
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if docker compose ps --format '{{.Health}}' service | grep -q healthy; then
+              echo "healthy after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::service did not become healthy in 30s"
+          docker compose logs service
+          exit 1
+
+      - name: Install bats
+        run: |
+          set -euo pipefail
+          # Source install: apt's bats lives in universe, which act's local
+          # runner image lacks. This works on act and GitHub-hosted alike.
           git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats
           sudo /tmp/bats/install.sh /usr/local
-          bats tests/e2e/
+
+      - name: Bats E2E
+        run: bats tests/e2e/
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose logs service
+
+  # ═══════════════════════════════════════════════════════════════
+  # Guard: no credentials in the tracked tree (AGENTS.md §Security)
+  # ═══════════════════════════════════════════════════════════════
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert no live credential files are tracked
+        run: |
+          set -euo pipefail
+          # Only .example shapes may be tracked.
+          if git ls-files | grep -E '^\.credentials/.*\.json$' | grep -v '\.example$'; then
+            echo "::error::a live .credentials/*.json file is tracked"
+            exit 1
+          fi
+          if git ls-files | grep -qxF '.env'; then
+            echo "::error::.env is tracked"
+            exit 1
+          fi
+          if git ls-files | grep -E '\.(pem|key|p12)$'; then
+            echo "::error::a key material file is tracked"
+            exit 1
+          fi
+          echo "No live credential files tracked."
+      - name: Assert no hardcoded secret assignments in source
+        run: |
+          set -euo pipefail
+          # Real assignments only — env lookups and .example placeholders are fine.
+          hits=$(git ls-files '*.py' '*.sh' '*.js' '*.ts' '*.yml' '*.yaml' \
+            | xargs -r grep -nEi \
+              "(client_secret|access_token|refresh_token|bot_token|api_key|jwt_secret)[[:space:]]*=[[:space:]]*['\"][A-Za-z0-9/_.+-]{12,}['\"]" \
+            || true)
+          if [ -n "$hits" ]; then
+            echo "::error::hardcoded secret assignment found"
+            echo "$hits"
+            exit 1
+          fi
+          echo "No hardcoded secret assignments."

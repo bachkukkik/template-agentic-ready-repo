@@ -48,13 +48,14 @@ Every PRD topic must satisfy:
 
 ### Global Test Suite Structure
 
-| Tier | Directory | Runner | CI Job | Covers |
-|------|-----------|--------|--------|--------|
-| Unit + Component | `tests/unit/` | [runner] | `unit` | Pure logic, mocked API |
-| E2E | `tests/e2e/` | [runner] | `e2e` | Full user flows |
-| Integration | `tests/integration/` | [runner] | `integration` | Service-to-service |
+| Tier | Directory | Runner | CI Job | ID range | Covers |
+|------|-----------|--------|--------|----------|--------|
+| Unit + Component | `tests/unit/` | pytest | `unit` | `AC-X-0NN` | Pure logic, no transport |
+| E2E | `tests/e2e/` | bats | `e2e` | `AC-X-1NN` | Full flows against a running container |
+| Integration | `tests/integration/` | pytest | `integration` | `AC-X-2NN` | Cross-process / persistence |
 
-**Test ID convention:** `AC-<DOMAIN>-NNN` (e.g., `AC-EXM-001`).
+**Test ID convention:** `AC-<DOMAIN>-NNN` (e.g., `AC-EXM-001`). The hundreds digit
+encodes the tier, per the table above.
 
 **CI gate:** All CI jobs must pass before merge. No PR merges with a red test.
 
@@ -63,3 +64,4 @@ Every PRD topic must satisfy:
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1.0 | 2026-01-01 | Template created. |
+| 0.2.0 | 2026-09-02 | Test tiers made executable; ID ranges encode the tier. |

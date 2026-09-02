@@ -13,10 +13,10 @@ user prompt (any harness)
 scratchpads/          playground, notes, memos          gitignored, deletable
    ▼
 kb/raw/               immutable sources, any format     add-only, never edited
-   ▼  /llm-wiki ./kb/
+   ▼  llm-wiki ./kb/
 kb/                   confirmed knowledge               written ONLY by llm-wiki
    ▼
-PRD.md + docs/prd/    intent, grounded in kb/           pm skill
+PRD.md + docs/prd/    intent, grounded in kb/           pm skills
    ▼
 docs/gaps/            kb ↔ prd, prd ↔ code divergence   transient, must resolve
    ▼
@@ -27,7 +27,9 @@ GitHub issues         everything else
 
 A new `.md` that fits none of these stages is a defect — file an issue instead.
 `kb/` follows the [llm-wiki spec](https://github.com/NousResearch/hermes-agent/blob/main/skills/research/llm-wiki/SKILL.md)
-strictly; unused KB material is archived to `kb/_archive/`, never deleted.
+strictly; unused KB material is archived to `kb/_archive/`, never deleted. The add-only
+rule for `kb/raw/` is enforced in CI by
+[`sources-readonly.yml`](.github/workflows/sources-readonly.yml), not just by instruction.
 
 ## Quick Start
 
@@ -39,11 +41,13 @@ cd template-agentic-ready-repo
 # Start services
 docker compose up -d
 
-# Run tests
+# Run tests (unit + integration; --with-e2e adds the container tier)
 bash tests/run.sh
+bash tests/run.sh --with-e2e
 
-# Local CI (pre-PR)
-act push
+# Local CI (pre-PR) — never `act push` unqualified on a host running this
+# compose project live; the e2e job would replace its containers. See AGENTS.md §6.
+act push -j unit && act push -j integration && act push -j secret-scan
 ```
 
 ## Services
@@ -62,6 +66,7 @@ act push
 │   ├── skills/            # Skills pinned to this repo
 │   └── plugins/           # Plugins pinned to this repo
 ├── .claude/               # skills, plugins → symlinks into ../.agents/
+│   └── agents/            # investigator.md — root-cause gate as a sub-agent
 ├── PRD.md                 # Master PRD → topic PRDs in docs/prd/
 ├── README.md              # This file
 ├── .env.example           # Environment variable template
@@ -69,8 +74,7 @@ act push
 ├── docker-compose.yml     # Service orchestration
 ├── service/               # Python microservice
 │   ├── Dockerfile
-│   ├── src/main.py        # HTTP server with /health and /
-│   └── tests/test_main.py # pytest (unit + integration)
+│   └── src/main.py        # HTTP server with /health and /; route() is pure
 ├── kb/                    # Knowledge base — llm-wiki layout, tracked
 │   ├── SCHEMA.md          # KB conventions + tag taxonomy
 │   ├── index.md           # Page catalog (llm-wiki-maintained)
@@ -86,15 +90,19 @@ act push
 │   ├── NN-slug.md       # Empirical status docs (What/Why/How/Works/Fails/Verdict)
 │   ├── gaps/            # kb ↔ prd and prd ↔ code divergences
 │   └── prd/             # Topic PRDs with SC + test mapping (intent)
-├── tests/               # Three-tier test suite
-│   ├── run.sh             # Master test runner
-│   ├── unit/              # Unit tests
-│   ├── e2e/               # E2E (bats)
-│   └── integration/       # Integration tests
+├── tests/               # Three-tier test suite — each tier has a runner AND a CI job
+│   ├── run.sh             # Master test runner (--with-e2e adds the container tier)
+│   ├── conftest.py        # Puts service/ on sys.path for the tests
+│   ├── requirements.txt   # Test-only deps
+│   ├── unit/              # pytest — pure logic (AC-X-0NN)
+│   ├── e2e/               # bats — running container (AC-X-1NN)
+│   └── integration/       # pytest — cross-process (AC-X-2NN)
 ├── scratchpads/           # Agent scratch space (gitignored)
 └── .github/
     ├── copilot-instructions.md  # symlink → ../AGENTS.md
-    └── workflows/         # CI pipeline
+    └── workflows/
+        ├── ci.yml                 # unit → integration → e2e + secret scan
+        └── sources-readonly.yml   # kb/raw/** add-only gate
 ```
 
 ## Harness Support
@@ -121,20 +129,27 @@ land as plain text files holding a path and every entry point breaks.
 ## Testing
 
 ```bash
-# All tests
+# All tests (unit + integration)
 bash tests/run.sh
 
-# Unit tests (pytest)
-python3 -m pytest service/tests/ -v
+# All three tiers, against a running container
+docker compose up -d --build && bash tests/run.sh --with-e2e
 
-# E2E (bats, requires running Docker service)
-bats tests/e2e/
+# One tier at a time
+python3 -m pytest tests/unit -v
+python3 -m pytest tests/integration -v
+bats tests/e2e/            # requires the container to be up
 ```
+
+Test IDs follow `AC-<DOMAIN>-NNN`, where the hundreds digit names the tier: `0NN` unit,
+`1NN` e2e, `2NN` integration (AGENTS.md §5).
 
 ## Recommended Agent Skills
 
 AGENTS.md mandates several skills across its orchestration pipeline and Standing
-Orders. None are vendored into this template. Two install targets:
+Orders. Only `root-cause` is vendored into this template (at `.agents/skills/root-cause/`,
+because the root-cause gate and the `investigator` sub-agent depend on its exact
+procedure). Install the rest yourself. Two install targets:
 
 - **Host level (default)** — `~/.hermes/skills/`, `~/.claude/skills/`. Shared across
   all your repos.
@@ -153,6 +168,7 @@ this repo**, so auto-detecting installers do not pollute the working tree.
 | `security-best-practices` | https://github.com/openai/skills/tree/main/skills/.curated/security-best-practices | Plain skill — sparse-checkout `skills/.curated/security-best-practices` (SKILL.md + `references/`). Python / JS-TS / Go only |
 | `webapp-testing` | https://github.com/anthropics/skills/blob/main/skills/webapp-testing/SKILL.md | Plain skill — sparse-checkout `skills/webapp-testing` (SKILL.md + `scripts/` + `examples/`). Playwright-based |
 | `karpathy-guidelines` | https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines | Plain skill — single `SKILL.md` |
+| `root-cause` | **vendored** at `.agents/skills/root-cause/` | Already present. Gates every "why does X fail / what does X require" answer; `.claude/agents/investigator.md` is its Claude Code binding |
 | `pm` | https://github.com/phuryn/pm-skills | **Caveat below** — Claude Code plugin bundle, not a plain skill |
 
 ### `pm` caveat (read before installing)

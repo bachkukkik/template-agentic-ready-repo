@@ -50,6 +50,7 @@ scratchpads/*
 .claude/*
 !.claude/skills
 !.claude/plugins
+!.claude/agents
 
 # === Knowledge base — TRACKED ===
 # kb/ is funnel stage 2-3 (see AGENTS.md): kb/raw/ is immutable source material and

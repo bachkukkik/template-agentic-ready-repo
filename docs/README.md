@@ -13,10 +13,11 @@
 
 | # | Topic | Verdict | Updated | Covers | PRD | Gaps |
 |---|-------|---------|---------|--------|-----|------|
-| 01 | [Service Architecture](01-service-architecture.md) | partial | 2026-08-03 | `service/`, `docker-compose.yml`, `tests/` | [01-example-topic](prd/01-example-topic.md) | — |
+| 01 | [Service Architecture](01-service-architecture.md) | partial | 2026-09-02 | `service/`, `docker-compose.yml`, `tests/{unit,integration,e2e}`, `.github/workflows/` | [01-example-topic](prd/01-example-topic.md) | — |
 
-`01` is `partial`, not `works`: its *What Fails* lists cold-start latency, no host port
-binding, and `tests/integration/example.test.ts` being a no-op stub.
+`01` is `partial`, not `works`: its *What Fails* lists cold-start latency in the
+integration fixture, no host port binding, and an E2E job that must not be run under
+`act` on a host serving this compose project.
 
 **Verdict vocabulary** — copy the net verdict from the doc's own *Verdict* section:
 

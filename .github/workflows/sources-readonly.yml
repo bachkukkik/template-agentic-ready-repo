@@ -1,0 +1,60 @@
+name: kb/raw read-only check
+
+# Funnel rule 3 (AGENTS.md): kb/raw/ is Layer 1 of the knowledge base — immutable
+# source material. New sources may be ADDED freely; existing ones must never be
+# edited in place, and superseded ones are moved to kb/_archive/ rather than deleted.
+#
+# This check enforces that structurally instead of by instruction: a PR that
+# modifies or removes anything already under kb/raw/** fails unless it carries the
+# 'ingest' label. Additions are always allowed.
+#
+# The label (rather than an identity check) is the bypass because ingest is still a
+# human-in-the-loop flow — the llm-wiki skill's ingest workflow has an explicit
+# takeaways/approval step. Archiving also needs the label, since moving a file out
+# of kb/raw/ reads as a deletion here.
+#
+# Phase 2 (once ingest runs unattended): replace the label bypass with an identity
+# check — only a dedicated ingest bot may touch kb/raw/** — and make the check
+# fail-always for any human-authored PR.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  check-raw-readonly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for edits or removals under kb/raw/**
+        id: diff
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
+          # --diff-filter=MD: Modified or Deleted only. Added (A) files are the
+          # intended way to grow kb/raw/ and never trip this gate.
+          changed=$(git diff --name-only --diff-filter=MD \
+            "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" -- 'kb/raw/**')
+          if [ -n "$changed" ]; then
+            echo "touched=true" >> "$GITHUB_OUTPUT"
+            echo "Modified or deleted kb/raw/ files:"
+            echo "$changed"
+          else
+            echo "touched=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail unless PR is labeled 'ingest'
+        if: steps.diff.outputs.touched == 'true'
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          if echo ",${LABELS}," | grep -q ',ingest,'; then
+            echo "kb/raw/** changed, but PR is labeled 'ingest' — allowed."
+          else
+            echo "::error::This PR edits or removes files under kb/raw/** without the 'ingest' label. kb/raw/ is immutable Layer 1 source material (AGENTS.md funnel rule 3, kb/SCHEMA.md). Add new sources instead of editing, archive to kb/_archive/, or add the 'ingest' label if this is a genuine re-ingest."
+            exit 1
+          fi

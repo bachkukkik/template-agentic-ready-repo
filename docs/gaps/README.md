@@ -51,7 +51,7 @@ Who or what breaks if this stays open. If nothing does, close it as `wontfix`.
 
 Exactly one of:
 
-- `kb/raw/` ingest + `/llm-wiki ./kb/` — the knowledge was missing
+- `kb/raw/` ingest + `llm-wiki ./kb/` — the knowledge was missing
 - PRD edit — the intent was wrong or stale
 - Code change + test — the code was wrong (route through the coding pipeline)
 - GitHub issue #N — real, but not now
@@ -77,3 +77,11 @@ Rules:
 2. **No open gap survives a merge to `main` without a Resolution section.** An
    unresolvable gap becomes a GitHub issue and the file is closed pointing at it.
 3. **Gaps never carry fixes.** They observe; upstream stages change.
+4. **Every open gap has a row below.** `docs/README.md` points here for the gap
+   listing — a gap file with no row is invisible to the next agent.
+
+## Open gaps
+
+| # | Gap | Layers | Status | Opened |
+|---|-----|--------|--------|--------|
+| — | _none open_ | — | — | — |
