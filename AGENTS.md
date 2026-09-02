@@ -63,8 +63,8 @@ anything else           GitHub issue, or a comment on an existing issue
 | 0 | Prompt | — | User's desire and imagination, any harness | ephemeral | — |
 | 1 | Scratch | `scratchpads/` | Playgrounds, quick notes, memos, throwaway analysis | free-for-all; **gitignored, deletable at any time** | any tool |
 | 2 | Raw knowledge | `kb/raw/` | Immutable source documents about the project — any format (articles, papers, transcripts, assets) | **add new files or archive; never edit in place** | manual capture / ingest |
-| 3 | Knowledge | `kb/` (`concepts/`, `entities/`, `comparisons/`, `queries/`, `index.md`, `log.md`) | Confirmed knowledge, synthesized and fitted to repo purpose | agent-owned; regenerated from `kb/raw/` | **`/llm-wiki ./kb/` only** |
-| 4 | Intent | `PRD.md`, `docs/prd/NN-*.md` | Requirements, success criteria, test mapping, CI gate | edit freely, must stay grounded in `kb/` | `pm` skill |
+| 3 | Knowledge | `kb/` (`concepts/`, `entities/`, `comparisons/`, `queries/`, `index.md`, `log.md`) | Confirmed knowledge, synthesized and fitted to repo purpose | agent-owned; regenerated from `kb/raw/` | **`llm-wiki` on `./kb/` only** |
+| 4 | Intent | `PRD.md`, `docs/prd/NN-*.md` | Requirements, success criteria, test mapping, CI gate | edit freely, must stay grounded in `kb/` | PRD skills (see mapping) |
 | 5 | Gaps | `docs/gaps/NN-*.md` | Observed divergence: kb ↔ prd, or prd ↔ codebase | short-lived; closed when resolved | `karpathy-guidelines` |
 | 6 | Reality | `docs/NN-slug.md` + `docs/README.md` | Empirical observation — What/Why/How/Verification/What Works/What Fails/Resolution/Verdict; `README.md` is the verdict catalog | append/update per verified run | **`coding-agents-docs-guideline` only** |
 | 7 | Everything else | GitHub issues | Anything that fits no stage above | issue thread | `gh` CLI |
@@ -78,10 +78,12 @@ anything else           GitHub issue, or a comment on an existing issue
    supports. A PRD claim with no `kb/` backing is `[ASSUMPTION]`-marked or dropped. A
    `docs/NN-slug.md` claim with no verification command is not a claim.
 3. **`kb/raw/` is append-or-archive.** Never rewrite a raw source. Superseded raw files
-   move to `kb/_archive/` preserving their path.
-4. **`kb/` layer-2 pages are never hand-written.** Update `kb/raw/`, then run
-   `/llm-wiki ./kb/`. Follow the llm-wiki spec strictly:
+   move to `kb/_archive/` preserving their path. Enforced in CI by
+   `.github/workflows/sources-readonly.yml`.
+4. **`kb/` layer-2 pages are never hand-written.** Update `kb/raw/`, then run the
+   `llm-wiki` skill against `./kb/`. Follow the llm-wiki spec strictly:
    <https://github.com/NousResearch/hermes-agent/blob/main/skills/research/llm-wiki/SKILL.md>
+   Vendor the exact revision you pin to at `.agents/skills/llm-wiki/SKILL.md`.
 5. **Unused knowledge is archived, not deleted.** `kb/_archive/` is the terminus for
    stage 2 and 3 material — remove from `index.md`, replace inbound wikilinks with
    plain text + "(archived)", log the action in `kb/log.md`.
@@ -100,7 +102,7 @@ anything else           GitHub issue, or a comment on an existing issue
 |---|---|
 | A hunch, a scratch calculation, a paste buffer | `scratchpads/` |
 | An external doc / spec / transcript that describes the project | `kb/raw/` |
-| A stable fact about how this project works | `kb/raw/` → `/llm-wiki ./kb/` |
+| A stable fact about how this project works | `kb/raw/` → `llm-wiki ./kb/` |
 | A thing we want to build | `docs/prd/` |
 | "The PRD says X but the code does Y" | `docs/gaps/` |
 | "I ran it; here is what worked and what failed" | `docs/NN-slug.md` |
@@ -120,10 +122,10 @@ missing tool never waives the rule.
 | Entry instruction file | `AGENTS.md` (native) | `CLAUDE.md` (symlink) | `.github/copilot-instructions.md` (symlink) | read `AGENTS.md` manually |
 | Repo-scoped skills / plugins | `.agents/skills`, `.agents/plugins` | same, via `.claude/skills`, `.claude/plugins` symlinks | symlink the vendor dir to `.agents/` | inline the skill's `SKILL.md` into the prompt |
 | Host-level skills | `~/.hermes/skills/` | `~/.claude/skills/` | vendor-specific | — |
-| Sub-agent delegation | `delegate_task` / `kanban` | `Task` tool sub-agents | vendor-specific | do the work inline, in the documented phase order |
+| Sub-agent delegation | `delegate_task` / `kanban` | `Task` tool sub-agents (`.claude/agents/`) | vendor-specific | do the work inline, in the documented phase order |
 | Plan scratch space | `~/.hermes/plans/*.md` | `scratchpads/` (gitignored) | `scratchpads/` | `scratchpads/` |
 | Pipeline invocation | `/goal <request>` | prompt the phases below in order | prompt the phases below in order | prompt the phases below in order |
-| KB synthesis (funnel stage 3) | `/llm-wiki ./kb/` (native skill) | invoke `llm-wiki` skill on `./kb/` | invoke `llm-wiki` skill on `./kb/` | inline llm-wiki `SKILL.md`, apply its workflow to `./kb/` by hand |
+| KB synthesis (funnel stage 3) | `/llm-wiki ./kb/` (native skill) | invoke `llm-wiki` skill on `./kb/` | invoke `llm-wiki` skill on `./kb/` | inline `.agents/skills/llm-wiki/SKILL.md`, apply its workflow to `./kb/` by hand |
 | Issue tracking (funnel stage 7) | `gh issue create` / `gh issue comment` | same | same | same |
 
 **Two symlink families, both pointing at one canonical source.**
@@ -150,7 +152,20 @@ Never fork the content, never duplicate a skill per harness.
 
 Repo-scoped skills in `.agents/` are for skills this project pins. Everything the
 README lists installs at **host** level by default — vendor into `.agents/skills/`
-only when the version must travel with the repo.
+only when the version must travel with the repo. What this template ships pinned, and
+what a project typically adds:
+
+| Vendored skill | Why pinned here |
+|---|---|
+| `root-cause` | The root-cause gate below depends on its exact procedure |
+| `llm-wiki` *(add per project)* | Funnel stage 3 is gated on it; `kb/` is built to one revision |
+| domain skills *(add per project)* | Encode gotchas specific to this repo's stack |
+
+`.claude/agents/investigator.md` is the Claude Code binding of the *root-cause gate*:
+a read-only sub-agent that answers "why does X fail / what does X require" from cited
+repo evidence (`kb/`, `docs/`, code, config) and returns an explicit "not found"
+instead of a guess. Harnesses without sub-agents run the same procedure inline from
+`.agents/skills/root-cause/SKILL.md`.
 
 ---
 
@@ -163,7 +178,7 @@ Every substantive request is driven through the `/goal` pipeline. The coding age
 ```
 /goal <whatever user request>
 
-use pm skill for PRD, problem triage, success criteria definition and verification policy
+use pm skills for PRD, problem triage, success criteria definition and verification policy
 use karpathy skill for codebase investigation and all resource analysis
 prioritize task delegation over direct execution
 use opencode-plan-build-orchestrator skill for all coding tasks
@@ -175,7 +190,7 @@ use opencode-plan-build-orchestrator skill for all coding tasks
 ## sub1 — docs/tests gap sync
 check gaps in docs/ and tests/ against codebase. update + drop obsolescences accordingly.
 
-use pm skill for PRD, problem triage, success criteria definition and verification policy.
+use pm skills for PRD, problem triage, success criteria definition and verification policy.
 use karpathy skill for codebase investigation and all resource analysis.
 prioritize task delegation over direct execution.
 use opencode-plan-build-orchestrator skill for all coding tasks.
@@ -183,7 +198,7 @@ use opencode-plan-build-orchestrator skill for all coding tasks.
 ## sub2 — local CI
 run github action locally using https://github.com/nektos/act
 
-if problems surface, use pm skill for PRD, problem triage, success criteria definition and verification policy.
+if problems surface, use pm skills for PRD, problem triage, success criteria definition and verification policy.
 use karpathy skill for codebase investigation and all resource analysis.
 prioritize task delegation over direct execution.
 use opencode-plan-build-orchestrator skill for all coding tasks.
@@ -191,7 +206,7 @@ use opencode-plan-build-orchestrator skill for all coding tasks.
 ## sub3 — PR + CI monitor
 PR using yeet. thoroughly provide context in the PR using coding agent docs skill. lastly monitor CI/CD in PR.
 
-if problems surface, use pm skill for PRD, problem triage, success criteria definition and verification policy.
+if problems surface, use pm skills for PRD, problem triage, success criteria definition and verification policy.
 use karpathy skill for codebase investigation and all resource analysis.
 prioritize task delegation over direct execution.
 use opencode-plan-build-orchestrator skill for all coding tasks.
@@ -201,7 +216,7 @@ squash and merge to main all test-passed PRs.
 then git checkout main and pull here.
 lastly do full redeployment cycle from pull to serve.
 
-use pm skill for PRD, problem triage, success criteria definition and verification policy.
+use pm skills for PRD, problem triage, success criteria definition and verification policy.
 use karpathy skill for codebase investigation and all resource analysis.
 prioritize task delegation over direct execution.
 use opencode-plan-build-orchestrator skill for all coding tasks.
@@ -216,9 +231,9 @@ verbatim (drop the `/goal` line), or work from this table:
 
 | # | Phase | Do | Done when |
 |---|-------|----|-----------|
-| kickoff | Triage | Triage the request, ingest any new source material to `kb/raw/` + run `/llm-wiki ./kb/`, write/refresh the PRD section grounded in `kb/`, define success criteria + verification policy | SC list exists with `_Verify:_` annotations, each traceable to a `kb/` page |
+| kickoff | Triage | Triage the request, ingest any new source material to `kb/raw/` + run `llm-wiki ./kb/`, write/refresh the PRD section grounded in `kb/`, define success criteria + verification policy | SC list exists with `_Verify:_` annotations, each traceable to a `kb/` page |
 | `sub1` | Docs/tests gap sync | Diff `kb/` ↔ `docs/prd/` ↔ codebase ↔ `tests/`; record divergences in `docs/gaps/`, update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks; every `docs/gaps/` file has a Resolution |
-| `sub2` | Local CI | Run the GitHub Actions workflows locally with [`nektos/act`](https://github.com/nektos/act) | `act push` green |
+| `sub2` | Local CI | Run the workflows locally with [`nektos/act`](https://github.com/nektos/act) — `-j unit`, `-j integration`, `-j secret-scan`; E2E runs directly, not under act (see §6) | those three jobs green + `bash tests/run.sh --with-e2e` green |
 | `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
 | `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
 
@@ -229,9 +244,10 @@ re-enter kickoff triage for that problem before continuing.
 
 | Phase | Skill | Output |
 |-------|-------|--------|
-| Knowledge synthesis (funnel stage 3) | `llm-wiki` via `/llm-wiki ./kb/` | `kb/` layer-2 pages + `index.md` + `log.md` |
-| PRD / triage / success criteria / verification policy | `pm` (see README for source) | `PRD.md` section |
+| Knowledge synthesis (funnel stage 3) | `llm-wiki` on `./kb/` | `kb/` layer-2 pages + `index.md` + `log.md` |
+| PRD / triage / success criteria / verification policy | `pm` skills — `create-prd`, `identify-assumptions-*`, `test-scenarios` | `PRD.md` + `docs/prd/NN-*.md` |
 | Codebase & resource investigation | `karpathy-guidelines` | Evidence-based gap report → `docs/gaps/NN-*.md` |
+| Root-cause / requirement questions | `root-cause` (Claude Code: `investigator` sub-agent) | Cited answer, or explicit "not found" |
 | Empirical doc authoring (planned vs working) | `coding-agents-docs-guideline` | `docs/NN-slug.md` |
 | Task delegation | harness delegation mechanism (see adapter table) | Scoped sub-agent tasks |
 | All coding | `opencode-plan-build-orchestrator` | plan → build → verify via subagents |
@@ -253,6 +269,7 @@ Load and use these skills on EVERY task:
 | `webapp-testing` | Testing | Write and run comprehensive tests |
 | `coding-agents-docs-guideline` | Docs | Author/edit `docs/NN-slug.md` — funnel stage 6. Required, no exceptions |
 | `llm-wiki` | KB | Synthesize `kb/` from `kb/raw/` — funnel stage 3. The ONLY writer of `kb/` layer-2 pages |
+| `root-cause` | Any "why does X fail / what does X require" question | Cited evidence before a cause is proposed. Never present a guess as a fact |
 | `yeet` | Git ops | All commit/push/branch operations |
 | `opencode-plan-build-orchestrator` | Coding via delegate | All coding tasks MUST route through plan→build→verify |
 
@@ -266,9 +283,12 @@ Load and use these skills on EVERY task:
 ### 3. Code Quality Rules
 
 - **No `shell=True`** in subprocess calls — use `subprocess.run` with explicit args
-- **No hardcoded secrets** — use env vars or `key_env` references
-- **No wildcard patterns (`/*`)** in model config — filter them during discovery
+- **No hardcoded secrets** — credentials load from `.env` / a gitignored credentials
+  directory, never inline
 - **No `requests` without timeout** — always set `timeout=N`
+- **Never log a credential** — not a token, not a signing secret, not a signature header
+- **Inbound webhook signatures are verified before the payload is read**, on every
+  delivery path — an unsigned or unknown sender is rejected, not parsed
 - **bash scripts must use `set -euo pipefail`** and `$()` not backticks
 - **All Docker images pin tags** (no `:latest` for non-upstream images)
 
@@ -283,8 +303,8 @@ docker compose build && docker compose up -d
 # Check health
 docker compose ps
 
-# Run tests
-bash tests/run.sh
+# Run tests (add --with-e2e once the container is up)
+bash tests/run.sh --with-e2e
 
 # No secrets in git diff
 git diff --cached | grep -iE '(api_key|secret|token|password)' || echo "Clean"
@@ -312,12 +332,20 @@ Every PRD in `docs/prd/` must follow this structure for its Success Criteria sec
    All tests run in CI per .github/workflows/ci.yml. No PR merges with a red test.
    ```
 
-**Test ID convention:** `AC-<DOMAIN>-NNN` (e.g., `AC-POS-001`, `AC-WH-003`). Domain prefixes match the PRD topic.
+**Test ID convention:** `AC-<DOMAIN>-NNN`. Domain prefixes match the PRD topic, and the
+hundreds digit encodes the tier:
 
-**Three-tier test suite:** Every SC maps to one of three tiers:
-- Unit + Component — `tests/unit/`
-- E2E + Visual + A11y — `tests/e2e/`
-- Integration — `tests/integration/`
+| Range | Tier | Directory |
+|-------|------|-----------|
+| `AC-X-0NN` | Unit | `tests/unit/` |
+| `AC-X-1NN` | E2E | `tests/e2e/` |
+| `AC-X-2NN` | Integration | `tests/integration/` |
+
+**Three-tier test suite:** Every SC maps to one of three tiers, and every tier is
+actually executed by `tests/run.sh` and by a CI job — a tier with no runner is a defect:
+- Unit + Component — `tests/unit/` (pure logic, no transport)
+- E2E — `tests/e2e/` (bats, against a running container)
+- Integration — `tests/integration/` (cross-process / persistence)
 
 ### 6. CI/CD Pipeline — Local-First, Then Remote
 
@@ -334,6 +362,23 @@ locally via Docker               all jobs must pass
 
 **Rule: no PR is opened with a known-red local CI run.**
 
+> **Do not run `act push` unqualified, or `act push -j e2e`, on a host that also runs a
+> live deployment of this compose project.** The compose project name derives from the
+> directory name, so the E2E job's `docker compose up -d --build` **replaces the running
+> containers**. The job also tends not to pass under `act`: compose talks to the host
+> daemon while act's steps run inside a container, so anything the workflow seeds on
+> disk lands where the bind mount does not resolve. Locally run
+> `act push -j unit`, `-j integration`, `-j secret-scan`, and exercise the E2E tier
+> directly with `docker compose up -d --build && bash tests/run.sh --with-e2e` from a
+> checkout that is not the deployment.
+
+Two workflows gate this repo:
+
+| Workflow | Gates |
+|---|---|
+| `.github/workflows/ci.yml` | unit → integration → e2e (Docker), plus a secret scan |
+| `.github/workflows/sources-readonly.yml` | `kb/raw/**` is add-only; edits need the `ingest` label (funnel rule 3) |
+
 ---
 
 ## Repository Structure
@@ -343,9 +388,10 @@ locally via Docker               all jobs must pass
 ├── AGENTS.md           # This file — agent instructions (read first). CANONICAL.
 ├── CLAUDE.md           # symlink → AGENTS.md (Claude Code entry point)
 ├── .agents/            # Repo-scoped agent assets — CANONICAL
-│   ├── skills/         # Skills pinned to this repo
+│   ├── skills/         # Skills pinned to this repo (root-cause ships here)
 │   └── plugins/        # Plugins pinned to this repo
-├── .claude/            # skills, plugins → symlinks into ../.agents/
+├── .claude/            # skills, plugins → symlinks into ../.agents/; agents/ is Claude-specific
+│   └── agents/         #   investigator.md — the root-cause gate as a sub-agent
 ├── PRD.md              # Master PRD index → topic PRDs in docs/prd/
 ├── README.md           # Quick start, services, dev commands
 ├── .env.example        # Environment variable template
@@ -373,16 +419,19 @@ locally via Docker               all jobs must pass
 │   │   └── README.md   #   gap doc format + lifecycle
 │   └── prd/
 │       └── 01-example-topic.md    # STAGE 4. Topic PRDs with SC + test mapping (intent)
-├── tests/              # Three-tier test suite
-│   ├── run.sh          # Master test runner
-│   ├── unit/           # Unit + component tests
-│   ├── e2e/            # E2E tests (bats for infra)
-│   └── integration/    # Integration tests
+├── tests/              # Three-tier test suite — every tier has a runner and a CI job
+│   ├── run.sh          # Master test runner (--with-e2e for the Docker tier)
+│   ├── conftest.py     # Makes the service package importable from the tests
+│   ├── requirements.txt
+│   ├── unit/           # pytest — pure logic, no transport
+│   ├── e2e/            # bats — against a running container
+│   └── integration/    # pytest — cross-process / persistence
 ├── scratchpads/        # STAGE 1. Agent scratch space (gitignored except .gitkeep)
 └── .github/
     ├── copilot-instructions.md  # symlink → ../AGENTS.md
     └── workflows/
-        └── ci.yml      # CI pipeline definition
+        ├── ci.yml                 # unit → integration → e2e + secret scan
+        └── sources-readonly.yml   # kb/raw/** add-only gate
 ```
 
 > **Symlinks require `git config core.symlinks true`** (default off on Windows). Without
@@ -394,18 +443,23 @@ locally via Docker               all jobs must pass
 # Start services (adapt to your stack)
 docker compose up -d
 
-# Run tests
+# Tests (unit + integration; add --with-e2e against a running container)
 bash tests/run.sh
+bash tests/run.sh --with-e2e
 
-# Local CI (pre-PR)
-act push
+# Local CI (pre-PR) — never `act push` unqualified on a deployment host; see §6
+act push -j unit && act push -j integration && act push -j secret-scan
 ```
 
 ## Security
 
-- Never commit `.env`, API keys, JWT secrets
-- All credentials via env vars, never hardcoded
-- Webhook signature verification in satellite services
+- Never commit `.env`, API keys, or JWT secrets — only `.example` shapes are tracked
+- All credentials via env vars or a gitignored credentials directory, never hardcoded
+- Every inbound webhook delivery is signature-verified before its payload is read; a
+  sender with no stored secret is rejected, not parsed
+- Signing secrets are keyed per sender, so one sender's secret cannot sign another's
+  deliveries
+- `secret-scan` in CI enforces the first two structurally
 
 ## graphify
 

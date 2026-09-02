@@ -9,19 +9,22 @@
 
 ## Success Criteria
 
-- **SC1** — The system shall [do something verifiable]. _Verify:_ `tests/unit/example.test.ts` (AC-EXM-001).
+- **SC1** — The system shall route a known path to its handler. _Verify:_ `tests/unit/test_routing.py` (AC-EXM-001..003).
 
-- **SC2** — The system shall [do something else]. _Verify:_ `tests/e2e/example.spec.ts` (AC-EXM-002).
+- **SC2** — The running container shall answer `/health` and `/`. _Verify:_ `tests/e2e/example.bats` (AC-EXM-101, AC-EXM-102).
 
-- **SC3** — The system shall [handle an edge case]. _Verify:_ `tests/integration/example.test.ts` (AC-EXM-003).
+- **SC3** — The service shall serve those routes over a real socket, out of process. _Verify:_ `tests/integration/test_service_endpoints.py` (AC-EXM-201..203).
 
 ## Test Mapping
 
 | Expected behavior | Test file | Test IDs |
 |---|---|---|
-| [Behavior 1] | `tests/unit/example.test.ts` | AC-EXM-001 |
-| [Behavior 2] | `tests/e2e/example.spec.ts` | AC-EXM-002 |
-| [Behavior 3] | `tests/integration/example.test.ts` | AC-EXM-003 |
+| `/health`, `/`, and an unknown path map to 200/200/404 | `tests/unit/test_routing.py` | AC-EXM-001, AC-EXM-002, AC-EXM-003 |
+| The container answers `/health` and `/` | `tests/e2e/example.bats` | AC-EXM-101, AC-EXM-102 |
+| The out-of-process service answers over HTTP | `tests/integration/test_service_endpoints.py` | AC-EXM-201, AC-EXM-202, AC-EXM-203 |
+
+The hundreds digit encodes the tier — `0NN` unit, `1NN` e2e, `2NN` integration
+(AGENTS.md §5).
 
 ## Assumptions
 

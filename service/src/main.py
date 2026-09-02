@@ -1,20 +1,29 @@
-"""Minimal HTTP service — demonstrates the test pipeline."""
+"""Minimal HTTP service — demonstrates the three-tier test pipeline."""
 import json
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import os
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PORT = int(os.environ.get("PORT", 8000))
+
+
+def route(path: str) -> tuple[int, dict]:
+    """Map a request path to (status code, body).
+
+    Pure: no socket, no I/O. This is what the unit tier exercises — the
+    transport is left to the integration and e2e tiers.
+    """
+    if path == "/health":
+        return 200, {"status": "ok"}
+    if path == "/":
+        return 200, {"message": "hello"}
+    return 404, {"error": "not found"}
+
 
 class Handler(BaseHTTPRequestHandler):
     """Handle health check and echo endpoints."""
 
     def do_GET(self):
-        if self.path == "/health":
-            self._respond(200, {"status": "ok"})
-        elif self.path == "/":
-            self._respond(200, {"message": "hello"})
-        else:
-            self._respond(404, {"error": "not found"})
+        self._respond(*route(self.path))
 
     def _respond(self, code: int, body: dict):
         self.send_response(code)

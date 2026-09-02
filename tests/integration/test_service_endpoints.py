@@ -1,4 +1,4 @@
-"""Service unit + integration tests — pytest."""
+"""Integration tier — the real service over a real socket. IDs: AC-EXM-2NN."""
 import json
 import os
 import signal
@@ -10,7 +10,9 @@ import urllib.request
 import pytest
 
 SERVICE_URL = "http://127.0.0.1:18000"
-SERVICE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SERVICE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "service"
+)
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +32,7 @@ def service():
 
 
 def test_health_endpoint(service):
-    """AC-SVC-001: /health returns 200 with status=ok."""
+    """AC-EXM-201: /health returns 200 with status=ok."""
     with urllib.request.urlopen(f"{SERVICE_URL}/health") as resp:
         assert resp.status == 200
         body = json.loads(resp.read())
@@ -38,7 +40,7 @@ def test_health_endpoint(service):
 
 
 def test_root_endpoint(service):
-    """AC-SVC-002: / returns 200 with a message."""
+    """AC-EXM-202: / returns 200 with a message."""
     with urllib.request.urlopen(f"{SERVICE_URL}/") as resp:
         assert resp.status == 200
         body = json.loads(resp.read())
@@ -46,7 +48,7 @@ def test_root_endpoint(service):
 
 
 def test_404_unknown_path(service):
-    """AC-SVC-003: unknown path returns 404."""
+    """AC-EXM-203: unknown path returns 404."""
     with pytest.raises(urllib.error.HTTPError) as exc:
         urllib.request.urlopen(f"{SERVICE_URL}/nonexistent")
     assert exc.value.code == 404

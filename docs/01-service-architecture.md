@@ -2,12 +2,13 @@
 
 ## What
 
-The template repo provides a minimal Python HTTP service behind Docker Compose with a three-tier test suite (unit, integration, E2E) and a GitHub Actions CI pipeline. It demonstrates the agentic development workflow from AGENTS.md.
+The template repo provides a minimal Python HTTP service behind Docker Compose with a three-tier test suite (unit, integration, E2E) and two GitHub Actions workflows. It demonstrates the agentic development workflow from AGENTS.md.
 
 ## Why
 
 - New agent-driven projects need a working skeleton that enforces the doctrine from day one, not a blank repo.
 - A real service with real tests proves the pipeline works before any custom code is added.
+- Each tier named in AGENTS.md §5 must have a runner and a CI job, or the doctrine is decorative — the skeleton is where that is proven.
 - The doc structure itself models the `coding-agents-docs-guideline` template so agents learn by example.
 
 ## How
@@ -20,18 +21,19 @@ The service lives in `service/`. It is a Python stdlib HTTP server with three en
 | `/` | GET | `{"message":"hello"}` | Root endpoint |
 | anything else | GET | `{"error":"not found"}` | 404 catch-all |
 
+Routing is a pure function, `route(path) -> (code, body)`. `Handler.do_GET` is a two-line adapter over it. The split is what makes a genuine unit tier possible: the unit tests call `route()` with no socket, and the transport is left to the integration and E2E tiers.
+
 ### Container image
 
 ```dockerfile
 FROM python:3.12-slim
 WORKDIR /app
 COPY . .
-RUN pip install --no-cache-dir pytest
 EXPOSE 8000
 CMD ["python", "-m", "src.main"]
 ```
 
-The image is built from `service/` — the build context is the service directory, so `src/main.py` becomes `src.main` inside the container.
+The image is built from `service/` — the build context is the service directory, so `src/main.py` becomes `src.main` inside the container. The image carries no test dependencies: every tier runs outside the container (`tests/unit`, `tests/integration`) or against it (`tests/e2e`).
 
 ### Docker Compose
 
@@ -50,65 +52,69 @@ No host port binding. The service is only reachable inside the Docker network. E
 
 ### Test tiers
 
-| Tier | Location | Runner | Coverage |
-|------|----------|--------|----------|
-| Unit + integration | `service/tests/test_main.py` | pytest | HTTP endpoint behavior (AC-SVC-001..003) |
-| E2E | `tests/e2e/example.bats` | bats | Docker health via `docker compose exec` (AC-E2E-001..002) |
-| Integration (placeholder) | `tests/integration/example.test.ts` | — | Service-to-service tests |
+| Tier | Location | Runner | CI job | Coverage |
+|------|----------|--------|--------|----------|
+| Unit | `tests/unit/test_routing.py` | pytest | `unit` | `route()` path mapping (AC-EXM-001..003) |
+| Integration | `tests/integration/test_service_endpoints.py` | pytest | `integration` | The service out of process over a real socket (AC-EXM-201..203) |
+| E2E | `tests/e2e/example.bats` | bats | `e2e` | The running container via `docker compose exec` (AC-EXM-101..102) |
 
-Tests run sequentially through `tests/run.sh`. The runner exits non-zero on any tier failure.
+The hundreds digit of the test ID names the tier (AGENTS.md §5). `tests/conftest.py` puts `service/` on `sys.path`; `tests/requirements.txt` holds the test-only dependencies.
+
+`tests/run.sh` runs tier 1 and tier 2 unconditionally and tier 3 only with `--with-e2e`, so the default invocation needs no running container. It accumulates failures across tiers rather than exiting at the first, and prints `RESULT: PASSED` or `RESULT: FAILED`.
 
 ### CI pipeline
 
 ```yaml
 # .github/workflows/ci.yml
 jobs:
-  unit:          # pytest service/tests/
+  unit:          # pytest tests/unit
     needs: []
-  e2e:           # docker compose up + bats
+  integration:   # pytest tests/integration
     needs: [unit]
+  e2e:           # docker compose up + bats
+    needs: [integration]
+  secret-scan:   # tracked credential files + hardcoded assignments
+    needs: []
 ```
 
-The pipeline gates merge on main. Unit tests run first; E2E runs only if unit passes.
+`sources-readonly.yml` is the second gate: it fails any PR that modifies or deletes a file under `kb/raw/**` without the `ingest` label, making funnel rule 3 structural rather than advisory.
 
 ## Verification
 
 ```bash
 # Build and start
-cd template-agentic-ready-repo
 docker compose up -d --build
 
 # Verify container health
-docker compose ps
-docker compose exec service python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health'); print('ok')"
+docker compose ps --format '{{.Name}} {{.Status}}'
 
-# Run all tests
-bash tests/run.sh
+# Run all three tiers
+bash tests/run.sh --with-e2e
 ```
 
-All commands must return exit code 0. The test runner reports `3 passed` (pytest) + `2/2 bats` (E2E) + `All tests passed.`.
+`docker compose ps` must report `(healthy)`. The runner must print `3 passed` for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with `RESULT: PASSED`.
 
 ## What Works
 
-- Docker image builds from `service/` with a single `pip install pytest` layer
-- Health check endpoint responds within 50 ms under no load
-- All five tests pass locally (3 pytest + 2 bats)
-- Test runner exits 0 when the Docker service is running
-- CI pipeline gates on unit tests before running E2E
-- No secrets in git diff (`.env` excluded, `.env.example` committed)
+- Docker image builds from `service/` and reports `(healthy)` within 8 seconds of `docker compose up -d --build`
+- All eight tests pass locally: 3 unit + 3 integration + 2 bats
+- Every tier has both a runner in `tests/run.sh` and a job in `ci.yml` — no tier is a stub
+- `bash tests/run.sh` with no flags passes without Docker running, and reports the E2E tier as skipped rather than failed
+- The runtime image carries no test dependencies
+- CI gates E2E behind unit and integration; `secret-scan` runs independently
 
 ## What Fails
 
-- **Cold start latency:** The Python stdlib server binds in ~200 ms. The test fixture waits 1 second; slower environments may need a longer sleep.
-- **Host port access:** Removing host port binding means `curl localhost:8000` fails from the host. Only `docker compose exec` reaches the service.
-- **Integration test placeholder:** `tests/integration/example.test.ts` is a no-op stub with no actual coverage.
+- **Cold start latency:** The Python stdlib server binds in ~200 ms. The integration fixture waits a flat 1 second; slower environments may need longer.
+- **Host port access:** With no host port binding, `curl localhost:8000` fails from the host. Only `docker compose exec` reaches the service.
+- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs `docker compose up -d --build` against the host daemon under this repo's compose project name — on a host running this project live, that replaces the running containers.
 
 ## Resolution
 
-- **Cold start latency:** Increase the `time.sleep(1)` in the pytest fixture to `time.sleep(3)` on slow CI runners, or add a retry loop with exponential backoff.
-- **Host port access:** Add `ports: ["8000:8000"]` to `docker-compose.yml` if direct host access is needed for development. The template intentionally omits it for security.
-- **Integration test placeholder:** Replace the stub with actual service-to-service tests when a second service is added to the stack.
+- **Cold start latency:** Replace the `time.sleep(1)` in the pytest fixture with a retry loop against `/health` on slow runners.
+- **Host port access:** Add `ports: ["8000:8000"]` to `docker-compose.yml` if direct host access is needed for development. The template intentionally omits it.
+- **E2E under `act`:** Run `act push -j unit`, `-j integration`, `-j secret-scan` locally and exercise the E2E tier directly with `docker compose up -d --build && bash tests/run.sh --with-e2e` from a checkout that is not the deployment (AGENTS.md §6).
 
 ## Verdict
 
-**partial** — The template repo covers the full agentic development lifecycle with a verified pipeline. The single Python service is intentionally minimal — it exists to prove the test and CI infrastructure works, not to be a production application; the open failures are cold-start flakiness risk, no host port binding, and a stub integration test.
+**partial** — The skeleton verifies end to end: three executable test tiers, four CI jobs, and a kb/raw gate. The single Python service is intentionally minimal; the open failures are cold-start flakiness risk, no host port binding, and an E2E job that must not be run under `act` on a host serving this compose project.
