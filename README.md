@@ -71,6 +71,7 @@ act push -j unit && act push -j integration && act push -j secret-scan && act pu
 ├── README.md              # This file
 ├── .env.example           # Environment variable template
 ├── .gitignore             # Standard ignores for agentic repos
+├── .credentials/          # Live credential files — gitignored; only *.example tracked
 ├── docker-compose.yml     # Service orchestration
 ├── service/               # Python microservice
 │   ├── Dockerfile

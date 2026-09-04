@@ -36,6 +36,12 @@ Layer 1 immutability is enforced in CI, not just by instruction:
 `.github/workflows/sources-readonly.yml` fails any PR touching `kb/raw/**` without the
 `ingest` label.
 
+**Redact before you ingest.** This KB is tracked in git, and `raw/` is add-only — a
+credential pasted into a raw source cannot be edited out, only rotated and archived.
+Vendor webhook specs, API setup pages and deployment runbooks are the usual carriers.
+Record *that* a secret exists and *where* it is configured — the `.env` variable name,
+the `.credentials/` filename — never the value. `secret-scan` in CI checks this.
+
 ## Directory Structure
 
 ```

@@ -4,12 +4,15 @@
 !.env.example
 *.pem
 *.key
+*.p12
 
-# Live credential files — real webhook specs, service-account JSON, tokens.
-# Only .example shapes are ever tracked; `secret-scan` in CI enforces that.
+# Live credentials directory — AGENTS.md §Security calls for a *gitignored*
+# credentials dir; this is it. Real webhook specs, service-account JSON, tokens.
+# Only `.example` shapes are ever tracked, which is what ci.yml's secret-scan
+# job asserts.
 .credentials/*
 !.credentials/*.example
-!.credentials/*.example.json
+!.credentials/*.example.*
 
 # === Node.js ===
 node_modules/

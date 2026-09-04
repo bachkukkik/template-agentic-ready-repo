@@ -99,8 +99,8 @@ jobs:
         run: |
           set -euo pipefail
           # Only .example shapes may be tracked.
-          if git ls-files | grep -E '^\.credentials/.*\.json$' | grep -v '\.example$'; then
-            echo "::error::a live .credentials/*.json file is tracked"
+          if git ls-files | grep -E '^\.credentials/' | grep -v '\.example\(\..*\)\?$'; then
+            echo "::error::a live .credentials/ file is tracked (only *.example shapes may be)"
             exit 1
           fi
           if git ls-files | grep -qxF '.env'; then
@@ -112,13 +112,35 @@ jobs:
             exit 1
           fi
           echo "No live credential files tracked."
-      - name: Assert no hardcoded secret assignments in source
+
+      - name: Assert .credentials/ is gitignored
+        run: |
+          set -euo pipefail
+          # The doctrine promises a *gitignored* credentials directory (AGENTS.md
+          # §Security). Assert the promise instead of trusting it: a probe file must
+          # come back ignored. Without this the job above only catches a leak that
+          # already happened.
+          mkdir -p .credentials
+          probe='.credentials/__ci_probe.json'
+          printf 'probe\n' > "$probe"
+          if git check-ignore -q "$probe"; then
+            echo ".credentials/ is gitignored."
+          else
+            echo "::error::.credentials/ is NOT gitignored — add it to .gitignore"
+            rm -f "$probe"; exit 1
+          fi
+          rm -f "$probe"
+
+      - name: Assert no hardcoded secret assignments in source or docs
         run: |
           set -euo pipefail
           # Real assignments only — env lookups and .example placeholders are fine.
-          hits=$(git ls-files '*.py' '*.sh' '*.js' '*.ts' '*.yml' '*.yaml' \
+          # Markdown is in scope on purpose: kb/ and docs/ are tracked, and kb/raw/
+          # is add-only, so a credential pasted into a source doc cannot be edited
+          # out later (funnel rule 9). Catch it at the PR instead.
+          hits=$(git ls-files '*.py' '*.sh' '*.js' '*.ts' '*.yml' '*.yaml' '*.md' \
             | xargs -r grep -nEi \
-              "(client_secret|access_token|refresh_token|bot_token|api_key|jwt_secret)[[:space:]]*=[[:space:]]*['\"][A-Za-z0-9/_.+-]{12,}['\"]" \
+              "(client_secret|access_token|refresh_token|bot_token|api_key|jwt_secret|hook_secret|webhook_secret|signing_secret|verify_token)[[:space:]]*[=:][[:space:]]*['\"][A-Za-z0-9/_.+-]{12,}['\"]" \
             || true)
           if [ -n "$hits" ]; then
             echo "::error::hardcoded secret assignment found"
