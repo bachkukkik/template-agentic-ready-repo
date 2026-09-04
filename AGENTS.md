@@ -95,6 +95,13 @@ anything else           GitHub issue, or a comment on an existing issue
 8. **Skill gates are absolute.** Stage 3 requires `llm-wiki`; stage 6 requires
    `coding-agents-docs-guideline`. No harness mechanism for a skill = paste its
    `SKILL.md` into the prompt and follow it manually. A missing tool never waives the gate.
+9. **Never write a secret into `kb/` or `docs/`.** Both are tracked. `kb/raw/` is the
+   ingest target for exactly the material that carries live values — vendor webhook
+   specs, API setup pages, deployment runbooks — so a verbatim paste is the likely way
+   a credential enters this repo. Record *that a secret exists and where it is
+   configured* (`.env` var name, `.credentials/` filename), never its value. Redact
+   before ingest, not after: `kb/raw/` is add-only, so a leaked secret cannot be edited
+   out — it costs a rotation plus an archive. Enforced in CI by the `secret-scan` job.
 
 ### Where does this text go?
 
@@ -287,6 +294,8 @@ Load and use these skills on EVERY task:
   directory, never inline
 - **No `requests` without timeout** — always set `timeout=N`
 - **Never log a credential** — not a token, not a signing secret, not a signature header
+- **Never commit a credential to a doc** — `kb/` and `docs/` are tracked; reference the
+  env var or `.credentials/` filename, never the value
 - **Inbound webhook signatures are verified before the payload is read**, on every
   delivery path — an unsigned or unknown sender is rejected, not parsed
 - **bash scripts must use `set -euo pipefail`** and `$()` not backticks
@@ -396,6 +405,7 @@ Two workflows gate this repo:
 ├── README.md           # Quick start, services, dev commands
 ├── .env.example        # Environment variable template
 ├── .gitignore          # Standard ignores for agentic repos
+├── .credentials/       # Live credential files — gitignored; only *.example tracked
 ├── kb/                 # Knowledge base — funnel stages 2-3. llm-wiki layout, strictly.
 │   ├── SCHEMA.md       # KB schema, tag taxonomy, conventions
 │   ├── index.md        # Sectioned catalog — maintained by llm-wiki
@@ -454,7 +464,9 @@ act push -j unit && act push -j integration && act push -j secret-scan
 ## Security
 
 - Never commit `.env`, API keys, or JWT secrets — only `.example` shapes are tracked
-- All credentials via env vars or a gitignored credentials directory, never hardcoded
+- All credentials via env vars or `.credentials/` (gitignored), never hardcoded
+- Never paste a live value into `kb/` or `docs/` — see funnel rule 9. `kb/raw/` is
+  add-only, so a leak there is unfixable by edit
 - Every inbound webhook delivery is signature-verified before its payload is read; a
   sender with no stored secret is rejected, not parsed
 - Signing secrets are keyed per sender, so one sender's secret cannot sign another's
