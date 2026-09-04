@@ -47,7 +47,7 @@ bash tests/run.sh --with-e2e
 
 # Local CI (pre-PR) — never `act push` unqualified on a host running this
 # compose project live; the e2e job would replace its containers. See AGENTS.md §6.
-act push -j unit && act push -j integration && act push -j secret-scan
+act push -j unit && act push -j integration && act push -j secret-scan && act push -j doctrine
 ```
 
 ## Services
@@ -102,7 +102,7 @@ act push -j unit && act push -j integration && act push -j secret-scan
 └── .github/
     ├── copilot-instructions.md  # symlink → ../AGENTS.md
     └── workflows/
-        ├── ci.yml                 # unit → integration → e2e + secret scan
+        ├── ci.yml                 # unit → integration → e2e + secret scan + doctrine
         └── sources-readonly.yml   # kb/raw/** add-only gate
 ```
 
@@ -126,6 +126,13 @@ ln -s ../.agents/skills <vendor-dir>/skills
 
 **Windows:** run `git config core.symlinks true` before cloning, or the symlinks
 land as plain text files holding a path and every entry point breaks.
+
+The `doctrine` CI job makes both failure modes loud. It fails the build when an entry
+point is a plain copy (a forked `CLAUDE.md` drifts from `AGENTS.md` with nothing to
+notice it) or a dangling link (`.claude/skills` → an absent or gitignored `.agents/`
+still commits and clones intact), and when a `.gitignore` rule hides a funnel stage.
+Ignoring `AGENTS.md`, `docs/`, `kb/` or `.github/` locally empties the funnel for the
+next agent working from a fresh clone — that is a repo defect, not a preference.
 
 ## Testing
 
