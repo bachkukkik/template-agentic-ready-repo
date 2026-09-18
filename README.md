@@ -48,6 +48,11 @@ bash tests/run.sh --with-e2e
 # Local CI (pre-PR) — never `act push` unqualified on a host running this
 # compose project live; the e2e job would replace its containers. See AGENTS.md §6.
 act push -j unit && act push -j integration && act push -j secret-scan && act push -j doctrine
+
+# Graph search for coding agents (optional but recommended) — see AGENTS.md §codegraph
+npm i -g @colbymchenry/codegraph
+codegraph install   # wires your agent's MCP config (hermes/opencode/claude/... auto-detected)
+codegraph init      # one-time per clone: builds .codegraph/ (gitignored)
 ```
 
 ## Services
