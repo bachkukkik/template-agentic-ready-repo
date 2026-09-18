@@ -19,7 +19,7 @@ challenger (research of 2026-09-16, see
 
 | Dimension | [[codegraph]] | graphify |
 |---|---|---|
-| Primary surface | MCP (8 tools) + 11 installer targets | `/graphify` skill + CLI; MCP is an opt-in `[mcp]` extra (`python -m graphify.serve`) |
+| Primary surface | MCP (one tool by default — `codegraph_explore`; +7 via `CODEGRAPH_MCP_TOOLS`) + 11 installer targets | `/graphify` skill + CLI; MCP is an opt-in `[mcp]` extra (`python -m graphify.serve`) |
 | Artifact scope | code (30+ languages) | code + docs + SQL schemas + configs + PDFs |
 | Index | `.codegraph/` SQLite — local, gitignored | `graphify-out/graph.json` — committable |
 | Sync | native file watcher, live | `graphify update .` after changes |

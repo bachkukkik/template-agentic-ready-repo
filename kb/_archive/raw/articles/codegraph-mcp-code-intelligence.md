@@ -1,15 +1,10 @@
 ---
 source_url: https://github.com/colbymchenry/codegraph  # README + source @ v1.6.0 (commit 4871114, main)
 ingested: 2026-09-16
-sha256: 615652f10096d5f016cbc5fd65c8dc1d32e75413c6734671640c0b91da8628d1
+sha256: 5ec94ec4d13194c584b8bcb435dcbb3ddecbb397d996f0e94ff91ff9d13446a4
 ---
 
 ## What it is
-
-> Correction note (2026-09-16): supersedes the archived v1 at
-> `_archive/raw/articles/codegraph-mcp-code-intelligence.md`, which misstated the
-> default MCP surface as 8 listed tools; v1.6.0 lists one tool by design
-> (`codegraph_explore`), the other 7 unlisted by default.
 
 CodeGraph is a local-first code-intelligence CLI + MCP server. It parses a codebase
 with tree-sitter into a deterministic (AST-derived, not LLM-summarized) symbol/edge
@@ -24,16 +19,10 @@ MIT. Active as of 2026-09-16: repo pushed that day; 46 npm releases since 2026-0
 
 ## Agent-facing surface
 
-- MCP surface: **a single tool by design** — `codegraph_explore` (precise
-  symbol-bag query → call path + relevant source + blast-radius summary in
-  one call). Upstream: measured agent behavior shows one strong tool steers
-  agents better than a menu of narrower ones. The other seven tools
-  (`codegraph_node`, `codegraph_search`, `codegraph_callers`,
-  `codegraph_callees`, `codegraph_impact`, `codegraph_files`,
-  `codegraph_status`) stay fully functional but are **unlisted by default**
-  — re-enable any on the MCP surface via `CODEGRAPH_MCP_TOOLS`
-  (e.g. `CODEGRAPH_MCP_TOOLS=explore,node,search,callers`), or use their CLI
-  twins.
+- MCP tools: `codegraph_search`, `codegraph_callers`, `codegraph_callees`,
+  `codegraph_impact`, `codegraph_node`, `codegraph_explore` (primary: precise
+  symbol-bag query → call path + relevant source in one call),
+  `codegraph_status`, `codegraph_files`.
 - CLI: `install, uninstall, init, uninit, index, sync, status, ui, unlock, query,
   explore, node, files, callers, callees, impact, affected, daemon, telemetry,
   upgrade, version, serve --mcp` (hidden MCP entry, stdio).
@@ -114,7 +103,7 @@ as the optional knowledge-graph tool for non-code artifacts (coexistence).
 
 | Fact | Source |
 |---|---|
-| Product description, MCP surface (one tool by default + CODEGRAPH_MCP_TOOLS), CLI commands, install, supported agents/languages, telemetry, `.codegraph/` gitignored, A/B numbers | https://github.com/colbymchenry/codegraph — README.md ("## MCP Tools" section), TELEMETRY.md, .gitignore @ v1.6.0 (4871114) |
+| Product description, MCP tools, CLI commands, install, supported agents/languages, telemetry, `.codegraph/` gitignored, A/B numbers | https://github.com/colbymchenry/codegraph — README.md, TELEMETRY.md, .gitignore @ v1.6.0 (4871114) |
 | Installer targets + exact per-harness config artifacts | upstream `src/installer/targets/registry.ts`, `hermes.ts`, `opencode.ts`, `claude.ts` @ 4871114 |
 | MCP transport (stdio JSON-RPC 2.0) | upstream `src/mcp/transport.ts` @ 4871114 |
 | Repo freshness (stars/forks/issues/pushed_at) | https://api.github.com/repos/colbymchenry/codegraph (queried 2026-09-16) |
