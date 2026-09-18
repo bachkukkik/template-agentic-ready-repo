@@ -136,6 +136,7 @@ missing tool never waives the rule.
 | Host-level skills | `~/.hermes/skills/` | `~/.claude/skills/` | vendor-specific | — |
 | Sub-agent delegation | `delegate_task` / `kanban` | `Task` tool sub-agents (`.claude/agents/`) | vendor-specific | do the work inline, in the documented phase order |
 | Plan scratch space | `~/.hermes/plans/*.md` | `scratchpads/` (gitignored) | `scratchpads/` | `scratchpads/` |
+| Code graph (structural search) | `codegraph install` → `$HERMES_HOME/config.yaml` `mcp_servers` + `mcp-codegraph` toolset | `codegraph install` → `./.mcp.json` / `~/.claude.json` | `codegraph install` (Copilot targets auto-configured) | any MCP client: stdio `codegraph serve --mcp`; no MCP → CLI (`codegraph explore/node/impact`) |
 | Pipeline invocation | `/goal <request>` | prompt the phases below in order | prompt the phases below in order | prompt the phases below in order |
 | KB synthesis (funnel stage 3) | `/llm-wiki ./kb/` (native skill) | invoke `llm-wiki` skill on `./kb/` | invoke `llm-wiki` skill on `./kb/` | inline `.agents/skills/llm-wiki/SKILL.md`, apply its workflow to `./kb/` by hand |
 | Issue tracking (funnel stage 7) | `gh issue create` / `gh issue comment` | same | same | same |
@@ -491,9 +492,35 @@ act push -j unit && act push -j integration && act push -j secret-scan && act pu
   deliveries
 - `secret-scan` in CI enforces the first two structurally
 
-## graphify
+## codegraph
 
-When `graphify-out/graph.json` exists, use graphify for codebase queries:
+[CodeGraph](https://github.com/colbymchenry/codegraph) is the **primary graph search
+for coding agents** in this repo: local-first, deterministic tree-sitter → SQLite
+symbol/edge graph over MCP (MIT, 30+ languages). Grounding:
+`kb/raw/articles/codegraph-mcp-code-intelligence.md`.
+
+```bash
+npm i -g @colbymchenry/codegraph   # once per machine (per-user, not root)
+codegraph install                  # once per machine: wires agent MCP configs (auto-detects hermes/opencode/claude/…)
+codegraph init                     # once per clone: builds .codegraph/ (gitignored); watcher auto-syncs afterwards
+```
+
+Wired agents get 8 MCP tools — lead with `codegraph_explore` (symbol names in →
+call path + relevant source in one call), then `codegraph_node` (full body + trail),
+`codegraph_callers`, `codegraph_callees`, `codegraph_impact`, `codegraph_search`,
+`codegraph_files`, `codegraph_status`. Harnesses without an MCP client (e.g. a
+DeepSeek harness) use the CLI twins: `codegraph explore|node|callers|callees|impact|query|affected`.
+In a fresh session run `codegraph sync` before trusting the graph. Test selection:
+`git diff --name-only | codegraph affected --stdin`.
+
+Any CI or scripted codegraph run sets `DO_NOT_TRACK=1` (telemetry is anonymous
+rollups, default-on, opt-out — off means off).
+
+### graphify (optional — knowledge graph over non-code artifacts)
+
+When `graphify-out/graph.json` exists, graphify is the optional knowledge-graph tool
+for non-code artifacts (docs, SQL schemas, configs, PDFs). It is not the agent
+graph-search — that is codegraph above.
 
 ```bash
 graphify query "<question>"

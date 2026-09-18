@@ -73,6 +73,9 @@ scratchpads/*
 # committed. The `doctrine` job in .github/workflows/ci.yml fails the build if it
 # happens, so a local override here will not go unnoticed.
 
+# === codegraph local index (local SQLite artifact; upstream gitignores it too) ===
+.codegraph/
+
 # === graphify cache ===
 graphify-out/cache/
 graphify-out/.graphify_python
