@@ -505,11 +505,14 @@ codegraph install                  # once per machine: wires agent MCP configs (
 codegraph init                     # once per clone: builds .codegraph/ (gitignored); watcher auto-syncs afterwards
 ```
 
-Wired agents get 8 MCP tools — lead with `codegraph_explore` (symbol names in →
-call path + relevant source in one call), then `codegraph_node` (full body + trail),
-`codegraph_callers`, `codegraph_callees`, `codegraph_impact`, `codegraph_search`,
-`codegraph_files`, `codegraph_status`. Harnesses without an MCP client (e.g. a
-DeepSeek harness) use the CLI twins: `codegraph explore|node|callers|callees|impact|query|affected`.
+The MCP surface lists **one tool by design** — `codegraph_explore` (symbol names
+in → call path + relevant source + blast-radius summary in one call); upstream
+measured that one strong tool steers agents better than a menu of narrow ones.
+The other 7 (`node`/`search`/`callers`/`callees`/`impact`/`files`/`status`) are
+unlisted by default: use the CLI twins `codegraph node|query|callers|callees|impact|files|status`,
+or re-enable them on the MCP surface with `CODEGRAPH_MCP_TOOLS=explore,node,search,callers`.
+Harnesses without an MCP client (e.g. a DeepSeek harness) use the CLI twins:
+`codegraph explore|node|callers|callees|impact|query|affected`.
 In a fresh session run `codegraph sync` before trusting the graph. Test selection:
 `git diff --name-only | codegraph affected --stdin`.
 

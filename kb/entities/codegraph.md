@@ -18,11 +18,16 @@ gemini, antigravity, kiro, copilot vscode/cli/jetbrains).
 
 ## Key facts (v1.6.0, as of 2026-09-16)
 
-- 8 MCP tools: `codegraph_explore` (primary — symbol-bag query → call path +
-  relevant source in one call), `codegraph_node`, `codegraph_callers`,
-  `codegraph_callees`, `codegraph_impact`, `codegraph_search`, `codegraph_files`,
-  `codegraph_status`. CLI twins with identical output for non-MCP harnesses
-  (e.g. a DeepSeek harness).
+- MCP surface: **one tool by design** — `codegraph_explore` (symbol-bag query →
+  call path + relevant source + blast-radius summary in one call). Upstream: one
+  strong tool steers agents better than a menu of narrow ones. The other 7
+  (node/search/callers/callees/impact/files/status) stay functional but are
+  **unlisted by default** — CLI twins, or re-enable via `CODEGRAPH_MCP_TOOLS`
+  (e.g. `CODEGRAPH_MCP_TOOLS=explore,node,search,callers`).
+- CLI: `install, uninstall, init, uninit, index, sync, status, ui, unlock, query,
+  explore, node, files, callers, callees, impact, affected, daemon, telemetry,
+  upgrade, version, serve --mcp` (hidden stdio MCP entry). The CLI twins serve
+  non-MCP harnesses (e.g. a DeepSeek harness).
 - Per-project index in `.codegraph/` — local artifact, gitignored (here and
   upstream). Native file watcher auto-syncs on save; `codegraph sync` in fresh
   sessions. `codegraph init` builds the graph in one step.
