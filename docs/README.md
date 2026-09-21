@@ -14,10 +14,15 @@
 | # | Topic | Verdict | Updated | Covers | PRD | Gaps |
 |---|-------|---------|---------|--------|-----|------|
 | 01 | [Service Architecture](01-service-architecture.md) | partial | 2026-09-02 | `service/`, `docker-compose.yml`, `tests/{unit,integration,e2e}`, `.github/workflows/` | [01-example-topic](prd/01-example-topic.md) | — |
+| 02 | [AGENTS.md Context Budget](02-agents-md-context-budget.md) | partial | 2026-09-21 | `AGENTS.md`, `tests/unit/test_agents_md_budget.py`, harness entry-point symlinks | — | — |
 
 `01` is `partial`, not `works`: its *What Fails* lists cold-start latency in the
 integration fixture, no host port binding, and an E2E job that must not be run under
 `act` on a host serving this compose project.
+
+`02` is `partial`, not `works`: the file itself is delivered under the cap, but the
+tripwire asserts only the 20,000-char flat floor (a lower host-pinned
+`context_file_max_chars` is invisible to it) and the remaining headroom is 835 chars.
 
 **Verdict vocabulary** — copy the net verdict from the doc's own *Verdict* section:
 
