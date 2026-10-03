@@ -11,3 +11,5 @@
 | 2026-09-16 | archive | raw/articles/codegraph-mcp-code-intelligence.md → _archive/raw/articles/codegraph-mcp-code-intelligence.md | v1 misstated the default MCP surface as 8 listed tools; superseded |
 | 2026-09-16 | ingest | raw/articles/codegraph-mcp-code-intelligence.md | Corrected v2: one-tool-by-default MCP surface + CODEGRAPH_MCP_TOOLS (verified via live tools/list handshake) |
 | 2026-09-16 | update | entities/codegraph.md, comparisons/codegraph-vs-graphify.md | Fix "8 MCP tools" claim per live verification |
+| 2026-10-03 | ingest | raw/articles/karpathy-output-medium-escalation.md | Karpathy output-medium escalation: ladder prose → ASD-STE100 → diagram → HTML → explainer video; meta-thesis large/custom/discardable artifacts; body sha256 verified 21961aa8… |
+| 2026-10-03 | create | concepts/output-medium-escalation.md | Layer-2 concept: ladder, meta-thesis, code-first render→parse constraint, six principles and how escalation extends the first four |
