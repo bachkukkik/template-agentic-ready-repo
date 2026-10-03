@@ -9,7 +9,8 @@
 | Concept | File | Confidence |
 |---------|------|------------|
 | Agent code-graph search | concepts/agent-code-graph-search.md | high |
-| Output-medium escalation | concepts/output-medium-escalation.md | medium |
+| Karpathy coding guidelines | concepts/karpathy-coding-guidelines.md | high |
+| Output-medium escalation | concepts/output-medium-escalation.md | high |
 
 ## Entities
 
@@ -35,13 +36,14 @@
 |--------|------|----------|
 | CodeGraph — MCP code intelligence (v1.6.0 evidence) | raw/articles/codegraph-mcp-code-intelligence.md | 2026-09-16 |
 | Karpathy — output-medium escalation (ASD-STE100 → diagram → HTML → explainer video) | raw/articles/karpathy-output-medium-escalation.md | 2026-10-03 |
+| Karpathy coding guidelines skill (the four principles, vendored copy) | raw/articles/karpathy-guidelines-skill.md | 2026-10-03 |
 
 ## Stats
 
-- Concepts: 2
+- Concepts: 3
 - Entities: 1
 - Comparisons: 1
 - Queries: 0
-- Raw sources: 2
+- Raw sources: 3
 - Archived: 0
-- Total: 4
+- Total: 5

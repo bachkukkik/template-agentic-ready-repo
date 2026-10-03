@@ -48,7 +48,11 @@ services:
       retries: 5
 ```
 
-No host port binding. The service is only reachable inside the Docker network. E2E tests use `docker compose exec` to reach the container directly.
+No host port binding. The service is only reachable inside the Docker network. E2E tests use `docker compose exec` to reach the container directly. For direct host access in development, merge the tracked override explicitly:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.host-ports.example.yml up -d
+```
 
 ### Test tiers
 
@@ -111,24 +115,24 @@ bash tests/run.sh --with-e2e
 ## What Works
 
 - Docker image builds from `service/` and reports `(healthy)` within 8 seconds of `docker compose up -d --build`
-- All twelve tests pass locally: 7 unit + 3 integration + 2 bats
+- All fourteen tests pass locally: 9 unit + 3 integration + 2 bats
 - Every tier has both a runner in `tests/run.sh` and a job in `ci.yml` — no tier is a stub
 - `bash tests/run.sh` with no flags passes without Docker running, and reports the E2E tier as skipped rather than failed
+- The integration fixture polls `/health` (0.1s interval, 5s budget) instead of sleeping a flat second — the tier completes in ~0.2s and tolerates slow cold starts
+- `bash tests/run.sh --with-e2e` starts the compose stack itself when it is down (verified: `docker compose stop service` then a green `--with-e2e` run)
+- `docker-compose.host-ports.example.yml` ships the opt-in host-port remedy as a tracked, documented override (`docker compose -f … -f … config` parses)
+- `act push -j secret-scan` and `act push -j unit` verified green under real act on this host (runner image `catthehacker/ubuntu` pulled, jobs succeeded)
 - The runtime image carries no test dependencies
 - CI gates E2E behind unit and integration; `secret-scan` and `doctrine` run independently
 
 ## What Fails
 
-- **Cold start latency:** The Python stdlib server binds in ~200 ms. The integration fixture waits a flat 1 second; slower environments may need longer.
-- **Host port access:** With no host port binding, `curl localhost:8000` fails from the host. Only `docker compose exec` reaches the service.
-- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs `docker compose up -d --build` against the host daemon under this repo's compose project name — on a host running this project live, that replaces the running containers.
+- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs `docker compose up -d --build` against the host daemon under this repo's compose project name — on a host running this project live, that replaces the running containers. This is a permanent design constraint (AGENTS.md §6), not a defect: the guard is the documented rule plus the `act`-exercisable jobs being run qualified.
 
 ## Resolution
 
-- **Cold start latency:** Replace the `time.sleep(1)` in the pytest fixture with a retry loop against `/health` on slow runners.
-- **Host port access:** Add `ports: ["8000:8000"]` to `docker-compose.yml` if direct host access is needed for development. The template intentionally omits it.
-- **E2E under `act`:** Run `act push -j unit`, `-j integration`, `-j secret-scan` locally and exercise the E2E tier directly with `docker compose up -d --build && bash tests/run.sh --with-e2e` from a checkout that is not the deployment (AGENTS.md §6).
+- **E2E under `act`:** Run the act-exercisable jobs qualified — `act push -j unit`, `-j integration`, `-j secret-scan`, `-j doctrine` — and exercise the E2E tier directly (AGENTS.md §6). The base `docker-compose.yml` keeps no host port; when direct host access is needed, merge the tracked override `docker-compose.host-ports.example.yml` explicitly.
 
 ## Verdict
 
-**partial** — The skeleton verifies end to end: three executable test tiers, five CI jobs, and a kb/raw gate. The single Python service is intentionally minimal; the open failures are cold-start flakiness risk, no host port binding, and an E2E job that must not be run under `act` on a host serving this compose project.
+**works** — The skeleton verifies end to end: three executable test tiers (14 tests green, cold-start-tolerant, e2e self-starting), five CI jobs (two of them exercised under real act), the kb/raw gate, and an opt-in host-port override. The one permanent caveat is operational, not functional: never run `act push` unqualified on a host serving this compose project (AGENTS.md §6).

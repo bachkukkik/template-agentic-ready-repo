@@ -1,0 +1,10 @@
+# Host-port override example — opt-in only, never applied by default.
+# The base docker-compose.yml binds no host port, so `curl localhost:8000` fails
+# from the host and only `docker compose exec` reaches the service. To get direct
+# host access in dev, merge this override explicitly:
+#   docker compose -f docker-compose.yml -f docker-compose.host-ports.example.yml up -d
+# Do not use this on a shared or production host — it opens 8000 to the host.
+services:
+  service:
+    ports:
+      - "8000:8000"

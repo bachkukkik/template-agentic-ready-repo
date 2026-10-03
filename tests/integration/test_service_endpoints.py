@@ -17,7 +17,7 @@ SERVICE_DIR = os.path.join(
 
 @pytest.fixture(scope="module")
 def service():
-    """Start the service in a subprocess, yield, then stop it."""
+    """Start the service in a subprocess, wait for /health, yield, then stop it."""
     proc = subprocess.Popen(
         ["python3", "-m", "src.main"],
         cwd=SERVICE_DIR,
@@ -25,7 +25,20 @@ def service():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    time.sleep(1)
+    # Poll /health until it returns 200 (cold start), retrying every 0.1s for up to 5s.
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(f"{SERVICE_URL}/health", timeout=0.5) as resp:
+                if resp.status == 200:
+                    break
+        except (urllib.error.URLError, ConnectionError):
+            pass
+        time.sleep(0.1)
+    else:
+        proc.send_signal(signal.SIGTERM)
+        proc.wait(timeout=5)
+        pytest.fail("service did not become healthy within 5s")
     yield proc
     proc.send_signal(signal.SIGTERM)
     proc.wait(timeout=5)

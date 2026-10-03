@@ -10,8 +10,8 @@ The template repo's `AGENTS.md` is the single agent instruction file every harne
 symlink resolves to, and it is delivered whole only while it stays under the harness
 context-file cap (20,000 characters). The repo already carries a verified *AGENTS.md
 context budget* doctrine (`docs/02-agents-md-context-budget.md`, tripwire
-`tests/unit/test_agents_md_budget.py` `AC-CTX-001`; measured after the §7 order below,
-19,723 chars / 277 chars headroom).
+`tests/unit/test_agents_md_budget.py` `AC-CTX-001`; measured after the §7 order and the
+codegraph trim below, 19,419 chars / 581 chars headroom (above the AC-CTX-003 floor of 500)).
 
 This topic adds one standing order to that file: **output-medium escalation**. The
 intent is that an agent consuming or producing model output picks the richest useful
@@ -87,8 +87,7 @@ are the doctrine's own presence/consistency guards.
 - [ASSUMPTION] Numbering the standing order exactly "§7" is satisfied by appending it
   as Standing Order 7; existing cross-references (`§5`, `§6`, `§Security`) must keep
   resolving after the edit.
-- [ASSUMPTION] The cap margin after adding the order stays positive (measured post-order
-  headroom is 277 chars on the current `AGENTS.md`).
+- [ASSUMPTION] The cap margin after adding the order stays positive (measured headroom is 581 chars on the current `AGENTS.md`, above the 500-char AC-CTX-003 floor).
 
 ## Confidence
 
