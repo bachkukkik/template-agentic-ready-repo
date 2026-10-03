@@ -33,6 +33,7 @@ Three sources feed this PRD set. When they conflict, this doctrine resolves:
 | # | Topic | Document | Status |
 |---|-------|----------|--------|
 | 01 | [Topic] | [docs/prd/01-topic.md](docs/prd/01-topic.md) | Template |
+| 04 | [gen-env script](docs/prd/04-gen-env-script.md) | Accepted |
 
 ## Verification Policy
 

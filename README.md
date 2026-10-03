@@ -53,6 +53,12 @@ act push -j unit && act push -j integration && act push -j secret-scan && act pu
 npm i -g @colbymchenry/codegraph
 codegraph install   # wires your agent's MCP config (hermes/opencode/claude/... auto-detected)
 codegraph init      # one-time per clone: builds .codegraph/ (gitignored)
+
+# Regenerate .env from .env.example (comments preserved)
+#   --fresh: byte-identical copy for a new deployment (refuses to clobber without --force)
+#   --update: writes .env.new with this deployment's values carried in; .env is never touched
+python3 scripts/gen-env.py --fresh
+python3 scripts/gen-env.py --update
 ```
 
 ## Services

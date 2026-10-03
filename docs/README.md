@@ -15,6 +15,7 @@
 |---|-------|---------|---------|--------|-----|------|
 | 01 | [Service Architecture](01-service-architecture.md) | partial | 2026-09-02 | `service/`, `docker-compose.yml`, `tests/{unit,integration,e2e}`, `.github/workflows/` | [01-example-topic](prd/01-example-topic.md) | — |
 | 02 | [AGENTS.md Context Budget](02-agents-md-context-budget.md) | partial | 2026-09-21 | `AGENTS.md`, `tests/unit/test_agents_md_budget.py`, harness entry-point symlinks | — | — |
+| 04 | [gen-env Script](04-gen-env-script.md) | works | 2026-10-03 | `scripts/gen-env.py`, `tests/unit/test_gen_env.py`, `.env.example` | [04-gen-env-script](prd/04-gen-env-script.md) | — |
 
 `01` is `partial`, not `works`: its *What Fails* lists cold-start latency in the
 integration fixture, no host port binding, and an E2E job that must not be run under
