@@ -75,9 +75,23 @@ jobs:
     needs: [integration]
   secret-scan:   # tracked credential files + hardcoded assignments
     needs: []
+  doctrine:      # entry-point symlinks resolve; the funnel is tracked
+    needs: []
 ```
 
 `sources-readonly.yml` is the second gate: it fails any PR that modifies or deletes a file under `kb/raw/**` without the `ingest` label, making funnel rule 3 structural rather than advisory.
+
+The same chain as a diagram (AGENTS.md §7 — render the structure, don't describe it in prose):
+
+```mermaid
+graph LR
+  PR --> unit
+  unit --> integration
+  integration --> e2e
+  PR --> secret-scan
+  PR --> doctrine
+  PR --> raw-gate["sources-readonly (kb/raw add-only)"]
+```
 
 ## Verification
 
@@ -92,16 +106,16 @@ docker compose ps --format '{{.Name}} {{.Status}}'
 bash tests/run.sh --with-e2e
 ```
 
-`docker compose ps` must report `(healthy)`. The runner must print `3 passed` for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with `RESULT: PASSED`.
+`docker compose ps` must report `(healthy)`. The runner must print `7 passed` for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with `RESULT: PASSED`.
 
 ## What Works
 
 - Docker image builds from `service/` and reports `(healthy)` within 8 seconds of `docker compose up -d --build`
-- All eight tests pass locally: 3 unit + 3 integration + 2 bats
+- All twelve tests pass locally: 7 unit + 3 integration + 2 bats
 - Every tier has both a runner in `tests/run.sh` and a job in `ci.yml` — no tier is a stub
 - `bash tests/run.sh` with no flags passes without Docker running, and reports the E2E tier as skipped rather than failed
 - The runtime image carries no test dependencies
-- CI gates E2E behind unit and integration; `secret-scan` runs independently
+- CI gates E2E behind unit and integration; `secret-scan` and `doctrine` run independently
 
 ## What Fails
 
@@ -117,4 +131,4 @@ bash tests/run.sh --with-e2e
 
 ## Verdict
 
-**partial** — The skeleton verifies end to end: three executable test tiers, four CI jobs, and a kb/raw gate. The single Python service is intentionally minimal; the open failures are cold-start flakiness risk, no host port binding, and an E2E job that must not be run under `act` on a host serving this compose project.
+**partial** — The skeleton verifies end to end: three executable test tiers, five CI jobs, and a kb/raw gate. The single Python service is intentionally minimal; the open failures are cold-start flakiness risk, no host port binding, and an E2E job that must not be run under `act` on a host serving this compose project.

@@ -160,7 +160,9 @@ Test IDs follow `AC-<DOMAIN>-NNN`, where the hundreds digit names the tier: `0NN
 ## Recommended Agent Skills
 
 AGENTS.md mandates several skills across its orchestration pipeline and Standing
-Orders. Only `root-cause` is vendored into this template (at `.agents/skills/root-cause/`,
+Orders (§7 *Output-Medium Escalation* names four of them: the rung skills at the
+bottom of the table). Only `root-cause` is vendored into this template (at
+`.agents/skills/root-cause/`,
 because the root-cause gate and the `investigator` sub-agent depend on its exact
 procedure). Install the rest yourself. Two install targets:
 
@@ -181,6 +183,10 @@ this repo**, so auto-detecting installers do not pollute the working tree.
 | `security-best-practices` | https://github.com/openai/skills/tree/main/skills/.curated/security-best-practices | Plain skill — sparse-checkout `skills/.curated/security-best-practices` (SKILL.md + `references/`). Python / JS-TS / Go only |
 | `webapp-testing` | https://github.com/anthropics/skills/blob/main/skills/webapp-testing/SKILL.md | Plain skill — sparse-checkout `skills/webapp-testing` (SKILL.md + `scripts/` + `examples/`). Playwright-based |
 | `karpathy-guidelines` | https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines | Plain skill — single `SKILL.md` |
+| `simple-english` | https://github.com/AminBlg/SimpleEnglish | Plain skill — sparse-checkout `skills/simple-english` (SKILL.md). §7 rung 1: STE-style controlled English. Hermes already ships it host-level (`creative/simple-english`) |
+| `diagrams` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (rung 2) | §7 rung 2: DOT/Mermaid → SVG via a deterministic renderer, verified by parsing |
+| `render-verify` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (verification glue) | §7 glue: render → parse verification — never by looking |
+| `explainer-video` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (rung 4) | §7 rung 4: HTML → MP4 via HyperFrames; needs `/dev/shm` ≥ 256 MB for the headless renderer |
 | `root-cause` | **vendored** at `.agents/skills/root-cause/` | Already present. Gates every "why does X fail / what does X require" answer; `.claude/agents/investigator.md` is its Claude Code binding |
 | `pm` | https://github.com/phuryn/pm-skills | **Caveat below** — Claude Code plugin bundle, not a plain skill |
 

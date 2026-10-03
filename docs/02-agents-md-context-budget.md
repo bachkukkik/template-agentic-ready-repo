@@ -35,9 +35,10 @@ Measured through the real builder (`pb.build_context_files_prompt`), not inferre
 | Revision | chars (`wc -m`) | bytes (`wc -c`) | sha256 (head) | AGENTS.md block delivered | full file verbatim | `TRUNCATED` warnings |
 |---|---|---|---|---|---|---|
 | before — `main` @ `7fb3d0c` | 29,598 | 30,347 | `a206cef8f12fb3b0` | 18,202 chars | `False` | 1 |
-| after — this branch | 19,165 | 19,357 | `0493b4511717c643` | 19,179 chars | `True` | 0 |
+| after trim — `c606e69` | 19,165 | 19,357 | `0493b4511717c643` | 19,179 chars | `True` | 0 |
+| after §7 — this branch | 19,723 | 19,929 | `f2808dc9054454cb` | 19,737 chars | `True` | 0 |
 
-Reduction: 10,433 chars / 10,990 bytes (35.2%). Headroom: 835 chars, 4.2% of the cap.
+Trim reduction: 10,433 chars / 10,990 bytes (35.2%). The §7 output-medium order (`docs/03-output-medium-doctrine.md`) then added 558 chars, for a net 9,875 chars / 33.4% below `main`. Headroom: 277 chars, 1.4% of the cap.
 
 ### Composition of the trimmed file
 
@@ -68,11 +69,11 @@ No rule was deleted. No fact was dropped: every cut fact has a published home (`
 ```bash
 # Size in both readings — chars is the binding one.
 # NB: under a non-UTF-8 locale (here LC_ALL=C) wc -m silently counts BYTES and matches
-# wc -c. This file carries 99 non-ASCII characters, so the two readings differ by 192.
+# wc -c. This file carries 106 non-ASCII characters, so the two readings differ by 206.
 LC_ALL=C.UTF-8 wc -m AGENTS.md
-# -> 19165 AGENTS.md
+# -> 19723 AGENTS.md
 wc -c AGENTS.md
-# -> 19357 AGENTS.md
+# -> 19929 AGENTS.md
 
 # Delivered through the REAL prompt builder: whole file present, no truncation warning
 HERMES_HOME=~/.hermes/profiles/<profile> /app/venv/bin/python3 - <<'PY'
@@ -83,7 +84,7 @@ out = pb.build_context_files_prompt(cwd=".", context_length=None)
 warn = [w for w in (pb.drain_truncation_warnings() or []) if "TRUNCATED" in w]
 print("chars", len(raw), "| verbatim", raw in out, "| warnings", warn)
 PY
-# -> chars 19165 | verbatim True | warnings []
+# -> chars 19723 | verbatim True | warnings []
 
 # The tripwire, via the repo's own runner
 bash tests/run.sh
@@ -92,11 +93,11 @@ bash tests/run.sh
 sha256sum AGENTS.md
 ```
 
-Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,165; the probe prints `verbatim True` with an empty warning list; the unit tier ends `RESULT: PASSED`.
+Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,723; the probe prints `verbatim True` with an empty warning list; the unit tier ends `RESULT: PASSED`.
 
 ## What Works
 
-- `AGENTS.md` is delivered whole — 19,165 chars against a 20,000-char cap, with 835 chars (4.2%) of headroom
+- `AGENTS.md` is delivered whole — 19,723 chars against a 20,000-char cap, with 277 chars (1.4%) of headroom
 - The real prompt builder returns the file verbatim (`raw in out == True`) and queues **zero** `TRUNCATED` warnings, down from one at 29,598 chars
 - All nine contract regions are byte-identical to the pre-edit snapshot, and every tightened region retains all ten funnel rules, the three CI-enforcement strings (rules 3, 9, 10), the root-cause binding and the `/goal` phase prose
 - Every `§N` cross-reference used elsewhere in the repo (`§5`, `§6`, `§Security`, `§codegraph` — in `tests/run.sh`, `.github/workflows/ci.yml`, `README.md`, `docs/`) still resolves against the trimmed headings
@@ -106,9 +107,9 @@ Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,165; the probe prints `verbatim True
 ## What Fails
 
 - **The cap is host-dependent:** the tripwire asserts the 20,000-char flat floor. A host profile that pins a *lower* `context_file_max_chars` truncates a file this test passes — the guard reads the repo, not host state.
-- **`wc -m` is locale-dependent:** under a non-UTF-8 locale (this container sets `LC_ALL=C`) `wc -m` silently counts **bytes** and prints 19,357 — the same output as `wc -c`, so a char check that reads `wc -m` is really a byte check. The file carries 99 non-ASCII characters (em dashes, `▼`, `→`, `§`), so the two readings differ by 192. Use `LC_ALL=C.UTF-8 wc -m` or `len(text)` in Python; the test asserts in Python and is immune.
-- **Bytes are not the rule:** the guard measures characters. `wc -c` also passes today (19,357) because the ASCII corpus dominates, but only the char count is binding — a file can be under in bytes and over in chars once it is non-ASCII enough.
-- **Headroom is thin:** 835 chars is roughly 25 lines of prose. A few appended Standing Orders re-cross the cap; the tripwire reports that, it does not prevent it.
+- **`wc -m` is locale-dependent:** under a non-UTF-8 locale (this container sets `LC_ALL=C`) `wc -m` silently counts **bytes** and prints 19,929 — the same output as `wc -c`, so a char check that reads `wc -m` is really a byte check. The file carries 106 non-ASCII characters (em dashes, `▼`, `→`, `§`), so the two readings differ by 206. Use `LC_ALL=C.UTF-8 wc -m` or `len(text)` in Python; the test asserts in Python and is immune.
+- **Bytes are not the rule:** the guard measures characters. `wc -c` also passes today (19,929) because the ASCII corpus dominates, but only the char count is binding — a file can be under in bytes and over in chars once it is non-ASCII enough.
+- **Headroom is thin:** 277 chars is roughly 8 lines of prose. A few appended Standing Orders re-cross the cap; the tripwire reports that, it does not prevent it.
 
 ## Resolution
 
@@ -119,4 +120,4 @@ Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,165; the probe prints `verbatim True
 
 ## Verdict
 
-**partial** — The trim verifies end to end: the file reaches the prompt byte-for-byte under the cap with zero truncation warnings, all nine contract regions and all ten funnel rules survive, and a hermetic unit tripwire now fails loudly on regression. The open limits are that the guard asserts the flat floor and cannot see a lower host-pinned cap, and that 835 chars of headroom is thin for a file that grows by accretion.
+**partial** — The trim verifies end to end: the file reaches the prompt byte-for-byte under the cap with zero truncation warnings, all nine contract regions and all ten funnel rules survive, and a hermetic unit tripwire now fails loudly on regression. The open limits are that the guard asserts the flat floor and cannot see a lower host-pinned cap, and that 277 chars of headroom is thin for a file that grows by accretion.
