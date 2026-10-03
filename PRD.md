@@ -33,6 +33,7 @@ Three sources feed this PRD set. When they conflict, this doctrine resolves:
 | # | Topic | Document | Status |
 |---|-------|----------|--------|
 | 01 | [Topic] | [docs/prd/01-topic.md](docs/prd/01-topic.md) | Template |
+| 03 | Output-Medium Doctrine | [docs/prd/03-output-medium-doctrine.md](docs/prd/03-output-medium-doctrine.md) | Accepted |
 
 ## Verification Policy
 
