@@ -39,7 +39,21 @@ if [ "$WITH_E2E" -eq 0 ]; then
 elif ! command -v bats >/dev/null 2>&1; then
   echo "SKIPPED (bats not installed: https://bats-core.readthedocs.io)"
 else
-  bats tests/e2e/ || fail=1
+  # The e2e tier reaches the container only through `docker compose exec`, so the
+  # stack must be up. Auto-start it when needed; leave it running afterwards.
+  if [ -z "$(docker compose ps -q service 2>/dev/null)" ]; then
+    echo "==> e2e: starting compose stack"
+    if ! timeout 120 docker compose up -d --wait; then
+      echo "ERROR: e2e: compose stack did not come up within 120s"
+      fail=1
+    fi
+  fi
+  if [ -z "$(docker compose ps -q service 2>/dev/null)" ]; then
+    echo "ERROR: e2e: service is not running — start it with 'docker compose up -d --wait'"
+    fail=1
+  else
+    bats tests/e2e/ || fail=1
+  fi
 fi
 
 echo

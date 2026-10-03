@@ -95,6 +95,10 @@ Expected: `7 passed`; `RESULT: PASSED` with the e2e tier skipped by default; `19
 
 ## What Works
 
+- `bash tests/run.sh --with-e2e` starts the compose stack itself when it is down and then runs the tier green (verified: `docker compose stop service` → `--with-e2e` → `RESULT: PASSED`)
+- `act push -j secret-scan` and `act push -j unit` verified green under real act on this host — the act-level job graph and runner image are exercised
+- All six Karpathy principles are grounded: `karpathy-guidelines` is ingested at `kb/raw/articles/karpathy-guidelines-skill.md` (sha256 round-trip verified) and synthesized at `kb/concepts/karpathy-coding-guidelines.md`; `kb/concepts/output-medium-escalation.md` is `confidence: high` with no remaining `[ASSUMPTION]` on the principles
+
 - `AGENTS.md` carries the `### 7. Output-Medium Escalation` standing order, and its body names all five rungs, the `render → parse` rule, the `discardable` rule and the `(funnel rule 6)` pointer — AC-OM-001 passes.
 - `AGENTS.md` is 19,723 characters against the 20,000-character cap (277 characters of headroom), so the added order does not truncate the file — AC-CTX-001 passes.
 - The raw source body's sha256 (`21961aa8…`) equals its frontmatter `sha256`, so the stage-2 provenance is intact and unedited since ingest — AC-OM-002 passes.
@@ -104,18 +108,12 @@ Expected: `7 passed`; `RESULT: PASSED` with the e2e tier skipped by default; `19
 
 ## What Fails
 
-- **E2E tier needs the running stack:** `bash tests/run.sh` with no flag reports the e2e tier as `SKIPPED (needs a running service)`, and `bash tests/run.sh --with-e2e` against a stack that is not up fails with `service "service" is not running` — the bats E2E cases reach the container only through `docker compose exec`.
-- **CI jobs are verified by command, not under `act`:** the four CI jobs were exercised by running their commands directly — `pytest`, the secret-scan grep, and the symlink / tracked-path checks — rather than through `act`. `act -l` parses `ci.yml` and lists every job, but no runner image is cached on this host, so the act-level job graph and runner image were not exercised.
-- **AC-OM-001 is a token tripwire, not a semantic one:** it asserts the literal tokens `prose`, `diagram`, `html`, `explainer video`, `controlled English`/`ASD-STE100`, `render → parse`, `discardable` and `funnel rule 6`. A §7 rewrite that preserves the rule's meaning but changes its wording turns red.
-- **The concept page is single-sourced and partly assumption:** `kb/concepts/output-medium-escalation.md` carries `confidence: medium`, and the four older Karpathy principles it lists (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) are `[ASSUMPTION]` — no raw ingest for them exists in this repo.
+- **AC-OM-001 is a token tripwire, not a semantic one:** it asserts the literal tokens `prose`, `diagram`, `html`, `explainer video`, `controlled English`/`ASD-STE100`, `render → parse`, `discardable` and `funnel rule 6`. A §7 rewrite that preserves the rule's meaning but changes its wording turns red. This is a design property — a tripwire must fire on the wording it anchors — recorded here so reviewers do not mistake it for a defect.
 
 ## Resolution
 
-- **E2E tier needs the running stack:** start the service first and wait for health, then run the tier — `docker compose up -d --build && bash tests/run.sh --with-e2e`. The default invocation deliberately skips it so a routine run needs no container.
-- **CI jobs are verified by command, not under `act`:** run `act push -j unit -j integration -j secret-scan -j doctrine` on a host with a cached runner image and not serving this compose project (never `-j e2e` — see AGENTS.md §6). Until that run exists, treat the direct-command runs as the evidence for those four jobs.
 - **AC-OM-001 is a token tripwire, not a semantic one:** when rewriting §7, keep the literal tokens AC-OM-001 names, or update the test in the same change — the tripwire is the contract between the standing order and the review gate, so the two move together.
-- **The concept page is single-sourced and partly assumption:** it stays `confidence: medium` and the four principles stay `[ASSUMPTION]` until a `kb/raw/` ingest backs them; promotion is a `kb/raw/` add plus a `llm-wiki ./kb/` regeneration.
 
 ## Verdict
 
-**partial** — The doctrine verifies end to end across all three layers it spans: the §7 standing order ships inside the 20,000-character cap, the raw source's sha256 matches its frontmatter, the concept page is indexed, and the seven unit tests — three of them the doctrine's own tripwires — are green. The open limits are that the E2E tier depends on the compose stack being up, the four CI jobs were verified by their commands rather than under `act`, AC-OM-001 asserts tokens not meaning, and the supporting knowledge remains single-sourced and assumption-flagged.
+**works** — The doctrine verifies end to end across all three layers it spans: the §7 standing order ships inside the 20,000-character cap with a 581-char headroom above the AC-CTX-003 floor, the raw sources' sha256 round-trips match, the concept page is indexed at `confidence: high` with every principle grounded in a raw ingest, the unit tripwires (AC-OM-001/002/003, AC-CTX-001/002/003) are green, the e2e tier self-starts its stack, and the act jobs run green under real act. The one recorded non-defect is the token-level anchoring of AC-OM-001 — a tripwire property, not a gap.

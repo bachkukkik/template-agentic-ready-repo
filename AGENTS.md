@@ -278,17 +278,8 @@ Tier flags: `tests/run.sh`; per-tier: `README.md` *Testing*.
 
 ## codegraph
 
-[CodeGraph](https://github.com/colbymchenry/codegraph) — **primary graph search for coding agents** (tree-sitter → SQLite over MCP).
-
-```bash
-npm i -g @colbymchenry/codegraph   # once per machine
-codegraph install                  # wires agent MCP configs
-codegraph init                     # once per clone
-codegraph node|query|callers|callees|impact|files|status   # CLI twins
-```
-
-MCP exposes **one tool by design** — `codegraph_explore`; the other 7 are unlisted (CLI twins or `CODEGRAPH_MCP_TOOLS=…`). `codegraph sync` before trusting the graph; tests via `codegraph affected --stdin`; CI sets `DO_NOT_TRACK=1`. → `kb/entities/codegraph.md`
+[CodeGraph](https://github.com/colbymchenry/codegraph) — **primary graph search for coding agents** (tree-sitter → SQLite over MCP). Install + MCP wiring: `README.md`. MCP exposes **one tool by design** — `codegraph_explore`; `codegraph sync` before trusting the graph; tests via `codegraph affected --stdin`; CI sets `DO_NOT_TRACK=1`; CLI twins. → `kb/entities/codegraph.md`
 
 ### graphify (optional)
 
-Knowledge graph over **non-code** artifacts (docs, SQL, configs, PDFs) — not the graph search (= codegraph): `graphify query|path|explain`. → `kb/comparisons/codegraph-vs-graphify.md`
+Non-code knowledge graph (docs, SQL, configs, PDFs) — not the graph search: `graphify query|path|explain`. → `kb/comparisons/codegraph-vs-graphify.md`
