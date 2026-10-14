@@ -17,6 +17,7 @@
 | 02 | [AGENTS.md Context Budget](02-agents-md-context-budget.md) | works | 2026-10-03 | `AGENTS.md`, `tests/unit/test_agents_md_budget.py`, harness entry-point symlinks | — | — |
 | 03 | [Output-Medium Doctrine](03-output-medium-doctrine.md) | works | 2026-10-03 | `AGENTS.md` §7, `docs/prd/03-output-medium-doctrine.md`, `kb/{raw/articles,concepts}/`, `tests/unit/test_output_medium_doctrine.py` | [03-output-medium-doctrine](prd/03-output-medium-doctrine.md) | — |
 | 04 | [gen-env Script](04-gen-env-script.md) | works | 2026-10-03 | `scripts/gen-env.py`, `tests/unit/test_gen_env.py`, `.env.example` | [04-gen-env-script](prd/04-gen-env-script.md) | — |
+| 06 | [Quality Controls](06-quality-controls.md) | works | 2026-10-14 | `.github/workflows/{ci,sources-readonly}.yml`, `tests/unit/test_quality_controls.py`, `.github/{pull_request_template.md,dependabot.yml,CODEOWNERS}`, `SECURITY.md`, main-branch ruleset | [06-quality-controls](prd/06-quality-controls.md) | [06-quality-controls](gaps/06-quality-controls.md) |
 
 **Verdict vocabulary** — copy the net verdict from the doc's own *Verdict* section:
 

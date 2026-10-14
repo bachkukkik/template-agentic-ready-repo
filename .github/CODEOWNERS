@@ -1,0 +1,8 @@
+# Advisory: single-maintainer repo — routes reviewers, does not gate (see docs/prd/06).
+* @bachkukkik
+
+/AGENTS.md @bachkukkik
+/PRD.md @bachkukkik
+/.github/CODEOWNERS @bachkukkik
+/.github/ @bachkukkik
+/.github/workflows/ @bachkukkik

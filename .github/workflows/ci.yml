@@ -12,6 +12,11 @@ on:
   push:
     branches: [main]
 
+# Deny-all default token scope (AC-QC-001): an omitted `permissions:` key inherits
+# the repo default, which may include write scope. Each job elevates to the minimum
+# it needs — in practice `contents: read` for the tree, nothing for the gate.
+permissions: {}
+
 jobs:
   # ═══════════════════════════════════════════════════════════════
   # Tier 1: unit — pure logic, no transport, no services
@@ -20,9 +25,13 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - run: pip install --no-cache-dir -r tests/requirements.txt
@@ -36,9 +45,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [unit]
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - run: pip install --no-cache-dir -r tests/requirements.txt
@@ -52,8 +65,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [integration]
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Build and start the service
         run: docker compose up -d --build
@@ -93,8 +110,12 @@ jobs:
     name: Secret Scan
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Assert no live credential files are tracked
         run: |
           set -euo pipefail
@@ -157,8 +178,12 @@ jobs:
     name: Doctrine Integrity
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Assert every harness entry point is a resolving symlink
         run: |
@@ -210,3 +235,68 @@ jobs:
             exit 1
           fi
           echo "No secret values under kb/."
+
+  # ═══════════════════════════════════════════════════════════════
+  # Guard: workflow static analysis (AC-QC-010). Findings fail CI —
+  # plain (annotations) mode, not SARIF-only, so a finding is fatal
+  # here rather than landing as a silent alert. No extra token scope:
+  # the audit reads ~/.github/workflows/ and nothing else.
+  # ═══════════════════════════════════════════════════════════════
+  zizmor:
+    name: Workflow Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install zizmor
+        run: pipx install zizmor
+      - name: Audit workflows (fail on findings)
+        run: zizmor --min-severity low .github/workflows/
+
+  # ═══════════════════════════════════════════════════════════════
+  # Aggregate gate (AC-QC-009). A failed upstream job SKIPS its
+  # downstream jobs, and GitHub required-check semantics treat
+  # `skipped` as passing — so a red unit tier would show green
+  # downstream checks. This job always runs and fails unless every
+  # tier reported `success`; it alone carries the required check.
+  # ═══════════════════════════════════════════════════════════════
+  qc-gate:
+    name: Quality Control Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit, integration, e2e, secret-scan, doctrine]
+    if: always()
+    permissions: {}
+    steps:
+      - name: Fail unless every tier succeeded
+        if: always()
+        env:
+          # Expressions are evaluated before the shell runs, so a shell loop
+          # variable cannot index the `needs` context. Read each job's result
+          # into the environment explicitly, then loop over the pairs.
+          RESULT_UNIT: ${{ needs.unit.result }}
+          RESULT_INTEGRATION: ${{ needs.integration.result }}
+          RESULT_E2E: ${{ needs.e2e.result }}
+          RESULT_SECRET_SCAN: ${{ needs.secret-scan.result }}
+          RESULT_DOCTRINE: ${{ needs.doctrine.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          for pair in \
+            "unit:$RESULT_UNIT" \
+            "integration:$RESULT_INTEGRATION" \
+            "e2e:$RESULT_E2E" \
+            "secret-scan:$RESULT_SECRET_SCAN" \
+            "doctrine:$RESULT_DOCTRINE"; do
+            job="${pair%%:*}"
+            result="${pair#*:}"
+            if [ "$result" != "success" ]; then
+              echo "::error::$job result=$result (skipped ≠ passing — see kb/concepts/qc-test-tiers.md)"
+              fail=1
+            fi
+          done
+          exit "$fail"
