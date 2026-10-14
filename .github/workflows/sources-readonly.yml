@@ -21,13 +21,20 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
+# Deny-all default token scope (AC-QC-001) — the job below elevates only to read
+# the tree it diffs.
+permissions: {}
+
 jobs:
   check-raw-readonly:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Check for edits or removals under kb/raw/**
         id: diff
