@@ -8,9 +8,14 @@
 
 | Concept | File | Confidence |
 |---------|------|------------|
+| Actions hardening | concepts/actions-hardening.md | high |
 | Agent code-graph search | concepts/agent-code-graph-search.md | high |
+| GitHub merge gates | concepts/github-merge-gates.md | high |
 | Karpathy coding guidelines | concepts/karpathy-coding-guidelines.md | high |
 | Output-medium escalation | concepts/output-medium-escalation.md | high |
+| QC test tiers | concepts/qc-test-tiers.md | high |
+| Quality controls | concepts/quality-controls.md | high |
+| Scanning without Advanced Security | concepts/scanning-without-advanced-security.md | high |
 
 ## Entities
 
