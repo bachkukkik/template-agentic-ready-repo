@@ -144,20 +144,32 @@ same procedure inline from `.agents/skills/root-cause/SKILL.md`.
 
 ---
 
-## The `/goal` Orchestration Workflow (coding-agent entry point)
+## Lifecycle — Zero to Deployment (coding-agent entry point)
 
-Every substantive request is driven through the `/goal` pipeline. The coding agent MUST capture and follow this sequence.
+Every substantive request — a new project from this template, or an update to an existing one — runs two stages in order. The coding agent MUST follow this sequence.
 
-**Kickoff prompt:**
+### Development stage — idea → implemented
+
+| # | Step | Do | Done when |
+|---|------|----|-----------|
+| D0 | Entry | **Zero:** fill the `[Project Name]` / *(adapt)* placeholders. **Existing:** capture current code + docs into `kb/raw/`, `codegraph sync` | No placeholder left / project in `kb/raw/` |
+| D1 | Prompt → intent | `/goal` kickoff: triage, then funnel stages 0–4 (`scratchpads/` → `kb/raw/` → `llm-wiki ./kb/` → PRD + SC + verification policy) | SC list with `_Verify:` annotations, each traceable to a `kb/` page |
+| D2 | Gaps | Diff `kb/` ↔ PRD ↔ codebase into `docs/gaps/` (stage 5) | Every gap names its Resolution |
+| D3 | Implement | `opencode-plan-build-orchestrator`: plan → build → verify via subagents (tests per §5) | SC tests green locally |
+| D4 | Empirical docs | `docs/NN-slug.md` + verdict row via `coding-agents-docs-guideline` (stage 6) | Verdict recorded with its verification commands |
+
+**Kickoff prompt:** `/goal <whatever user request>` + the shared footer.
+
+**Shared footer** — append to the kickoff and every sub block (sub2/sub3: prefix `if problems surface, `):
 
 ```
-/goal <whatever user request>
-
-use pm skills for PRD, problem triage, success criteria definition and verification policy
-use karpathy skill for codebase investigation and all resource analysis
-prioritize task delegation over direct execution
-use opencode-plan-build-orchestrator skill for all coding tasks
+use pm skills for PRD, problem triage, success criteria definition and verification policy.
+use karpathy skill for codebase investigation and all resource analysis.
+prioritize task delegation over direct execution.
+use opencode-plan-build-orchestrator skill for all coding tasks.
 ```
+
+### Delivery stage — ship to UAT or production
 
 **Subsequent prompts (run in order):**
 
@@ -165,66 +177,57 @@ use opencode-plan-build-orchestrator skill for all coding tasks
 ## sub1 — docs/tests gap sync
 check gaps in docs/ and tests/ against codebase. update + drop obsolescences accordingly.
 
-use pm skills for PRD, problem triage, success criteria definition and verification policy.
-use karpathy skill for codebase investigation and all resource analysis.
-prioritize task delegation over direct execution.
-use opencode-plan-build-orchestrator skill for all coding tasks.
-
 ## sub2 — local CI
 run github action locally using https://github.com/nektos/act
 
-if problems surface, use pm skills for PRD, problem triage, success criteria definition and verification policy.
-use karpathy skill for codebase investigation and all resource analysis.
-prioritize task delegation over direct execution.
-use opencode-plan-build-orchestrator skill for all coding tasks.
-
 ## sub3 — PR + CI monitor
 PR using yeet. thoroughly provide context in the PR using coding agent docs skill. lastly monitor CI/CD in PR.
-
-if problems surface, use pm skills for PRD, problem triage, success criteria definition and verification policy.
-use karpathy skill for codebase investigation and all resource analysis.
-prioritize task delegation over direct execution.
-use opencode-plan-build-orchestrator skill for all coding tasks.
 
 ## sub4 — merge + redeploy
 squash and merge to main all test-passed PRs.
 then git checkout main and pull here.
 lastly do full redeployment cycle from pull to serve.
+```
 
-use pm skills for PRD, problem triage, success criteria definition and verification policy.
-use karpathy skill for codebase investigation and all resource analysis.
-prioritize task delegation over direct execution.
-use opencode-plan-build-orchestrator skill for all coding tasks.
+**UAT variant (opt-in)** — a repo with a `uat` branch + UAT stack replaces `sub4` with these; the contract becomes `sub1`–`sub5`:
+
+```
+## sub4 — merge to uat + redeploy
+squash and merge to uat all test-passed PRs (create uat from main if it is missing).
+then git checkout uat and pull here.
+lastly do full redeployment cycle from pull to serve — the UAT stack.
+
+## sub5 — promote uat → main
+open ONE PR from uat into main and monitor its CI to terminal, then squash and merge it.
+then git checkout main and pull here.
+lastly do full redeployment cycle from pull to serve — the production stack.
 ```
 
 ### Running the pipeline without `/goal`
 
-`/goal` is a Hermes slash command; a harness without it runs the **same** pipeline by
-prompting the phases in order — the `sub1`–`sub4` labels are the cross-harness contract, so
-**"go through sub1-4"** is valid everywhere. Paste the blocks above verbatim (minus the
-`/goal` line), or work from this table:
+`/goal` is a Hermes slash command; a harness without it prompts the same steps in order — the `D0`–`D4` and `sub1`–`sub4` (UAT: `sub1`–`sub5`) labels are the cross-harness contract, so **"go through sub1-4"** is valid everywhere. Or use this table:
 
 | # | Phase | Do | Done when |
 |---|-------|----|-----------|
-| kickoff | Triage | Triage the request, ingest any new source material to `kb/raw/` + run `llm-wiki ./kb/`, write/refresh the PRD section grounded in `kb/`, define success criteria + verification policy | SC list exists with `_Verify:_` annotations, each traceable to a `kb/` page |
 | `sub1` | Docs/tests gap sync | Diff `kb/` ↔ `docs/prd/` ↔ codebase ↔ `tests/`; record divergences in `docs/gaps/`, update, and drop obsolescences | No SC without a test; no doc claiming behaviour the code lacks; every `docs/gaps/` file has a Resolution |
 | `sub2` | Local CI | Run the workflows locally with [`nektos/act`](https://github.com/nektos/act) — `-j unit`, `-j integration`, `-j secret-scan`, `-j doctrine`; E2E runs directly, not under act (see §6) | those four jobs green + `bash tests/run.sh --with-e2e` green |
 | `sub3` | PR + CI monitor | Open the PR with full context in the body; watch remote CI to completion | Remote CI green |
 | `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
+| `sub4`/`sub5` (UAT) | UAT variant | As the UAT blocks above | UAT, then production, healthy from a clean pull |
 
-Report each phase's *Done when* before starting the next; a problem surfacing re-enters kickoff triage for that problem first.
+Report each step's *Done when* before the next; a surfacing problem re-enters D1 triage first.
 
 **Skill-to-phase mapping** (install per README; substitute equivalents your harness ships):
 
-| Phase | Skill | Output |
-|-------|-------|--------|
-| Knowledge synthesis (funnel stage 3) | `llm-wiki` on `./kb/` | `kb/` layer-2 pages + `index.md` + `log.md` |
-| PRD / triage / success criteria / verification policy | `pm` skills — `create-prd`, `identify-assumptions-*`, `test-scenarios` | `PRD.md` + `docs/prd/NN-*.md` |
-| Codebase & resource investigation | `karpathy-guidelines` | Evidence-based gap report → `docs/gaps/NN-*.md` |
-| Root-cause / requirement questions | `root-cause` (Claude Code: `investigator` sub-agent) | Cited answer, or explicit "not found" |
-| Empirical doc authoring (planned vs working) | `coding-agents-docs-guideline` | `docs/NN-slug.md` |
-| Task delegation | harness delegation mechanism (see adapter table) | Scoped sub-agent tasks |
-| All coding | `opencode-plan-build-orchestrator` | plan → build → verify via subagents |
+| Phase | Skill |
+|---|---|
+| Knowledge synthesis (funnel stage 3) | `llm-wiki` on `./kb/` |
+| PRD / triage / success criteria / verification policy | `pm` skills — `create-prd`, `identify-assumptions-*`, `test-scenarios` |
+| Codebase & resource investigation | `karpathy-guidelines` |
+| Root-cause / requirement questions | `root-cause` (Claude Code: `investigator` sub-agent) |
+| Empirical doc authoring (planned vs working) | `coding-agents-docs-guideline` |
+| Task delegation | harness delegation mechanism (see adapter table) |
+| All coding | `opencode-plan-build-orchestrator` |
 
 ---
 
