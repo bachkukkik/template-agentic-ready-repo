@@ -127,11 +127,12 @@ bash tests/run.sh --with-e2e
 
 ## What Fails
 
-- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs `docker compose up -d --build` against the host daemon under this repo's compose project name — on a host running this project live, that replaces the running containers. This is a permanent design constraint (AGENTS.md §6), not a defect: the guard is the documented rule plus the `act`-exercisable jobs being run qualified.
+- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs `docker compose up -d --build` against the host daemon — the directory name is the compose project, so it replaces live containers. Run only the exercisable jobs, qualified (see below).
+- **Repeated `-j` flags under `act` (verified 2026-10-16, act 0.2.89):** `act push -j unit -j secret-scan` runs **only Secret Scan** — every `-j` but the last is silently dropped. The AGENTS.md §6 examples that showed four `-j` flags on one line therefore executed one job while looking like four. This is why the guard exists (AGENTS.md §6): a "local CI green" claim from a multi-`-j` invocation covers one job, not the suite.
 
 ## Resolution
 
-- **E2E under `act`:** Run the act-exercisable jobs qualified — `act push -j unit`, `-j integration`, `-j secret-scan`, `-j doctrine` — and exercise the E2E tier directly (AGENTS.md §6). The base `docker-compose.yml` keeps no host port; when direct host access is needed, merge the tracked override `docker-compose.host-ports.example.yml` explicitly.
+- **E2E under `act`:** Run the act-exercisable jobs qualified — `act push -j unit`, `act push -j integration`, `act push -j secret-scan`, `act push -j doctrine` (one `-j` per invocation); exercise the E2E tier directly via `bash tests/run.sh --with-e2e` (AGENTS.md §6). The base `docker-compose.yml` keeps no host port; when direct host access is needed, merge the tracked override `docker-compose.host-ports.example.yml` explicitly.
 
 ## Verdict
 
