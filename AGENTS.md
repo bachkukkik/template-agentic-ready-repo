@@ -251,7 +251,7 @@ Build+start, health check, test tiers, then `git diff --cached | grep -iE '(api_
 Every SC carries an inline `_Verify:` (file + ID), a Test Mapping table and a CI/CD gate; ids `AC-X-0NN` unit, `AC-X-1NN` e2e, `AC-X-2NN` integration (hundreds digit names the tier); every tier has a runner **and** a CI job; shared-infra tests are opt-in (`INTEGRATION_NEEDS_OPT_IN=1` → `RUN_INTEGRATION_TESTS=1`). → `PRD.md` § *Verification Policy*
 
 ### 6. CI/CD Pipeline — Local-First, Then Remote
-**No PR opens on a known-red local run**: `act push -j unit`, `-j integration`, `-j secret-scan`, `-j doctrine`, E2E via `bash tests/run.sh --with-e2e`. **Never `act push` unqualified or `-j e2e` on a host running this project live** — the directory name is the compose project, so its `docker compose up -d --build` replaces live containers. `ci.yml` gates unit → integration → e2e + `secret-scan`/`doctrine`; `sources-readonly.yml` gates `kb/raw/**` add-only (funnel rule 3). The `doctrine` job is funnel rule 10's enforcer and the Harness Adapter's structural half. → `docs/01-service-architecture.md` § *CI pipeline*
+**No PR opens on a known-red local run**: `act push -j <job>` (one `-j` per invocation — see *Development Commands*), E2E via `bash tests/run.sh --with-e2e`. **Never `act push` unqualified or `-j e2e` on a host running this project live** — the directory name is the compose project, so its `docker compose up -d --build` replaces live containers. `ci.yml` gates unit → integration → e2e + `secret-scan`/`doctrine`; `sources-readonly.yml` gates `kb/raw/**` add-only (funnel rule 3). The `doctrine` job is funnel rule 10's enforcer and the Harness Adapter's structural half. → `docs/01-service-architecture.md` § *CI pipeline*
 
 ### 7. Output-Medium Escalation
 For any explanatory output, consume the richest useful rung: prose → STE-style controlled English → diagram → HTML page → explainer video — all code-first, verified by render → parse (never by looking; works with non-visual engines). Large custom artifacts are **discardable**: build them in `scratchpads/`, never cite them (funnel rule 6). Skills per project (host-level): `simple-english`, `diagrams`, `render-verify`, `explainer-video`. → `docs/prd/03-output-medium-doctrine.md`; `kb/concepts/output-medium-escalation.md`
@@ -266,7 +266,7 @@ For any explanatory output, consume the richest useful rung: prose → STE-style
 docker compose up -d           # start services     (adapt)
 bash tests/run.sh              # unit + integration
 bash tests/run.sh --with-e2e   # + the container tier
-act push -j unit -j integration -j secret-scan -j doctrine
+act push -j unit               # one -j per invocation; repeat per job
 ```
 
 Tier flags: `tests/run.sh`; per-tier: `README.md` *Testing*.
