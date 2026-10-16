@@ -37,11 +37,12 @@ Measured through the real builder (`pb.build_context_files_prompt`), not inferre
 | before — `main` @ `7fb3d0c` | 29,598 | 30,347 | `a206cef8f12fb3b0` | 18,202 chars | `False` | 1 |
 | after trim — `c606e69` | 19,165 | 19,357 | `0493b4511717c643` | 19,179 chars | `True` | 0 |
 | after §7 — this branch | 19,723 | 19,929 | `f2808dc9054454cb` | 19,737 chars | `True` | 0 |
-| after codegraph trim — this branch | 19,419 | 19,419+ | — | 19,433 chars | `True` | 0 |
+| after codegraph trim — `main` @ `11b00e1` | 19,419 | 19,419+ | — | 19,433 chars | `True` | 0 |
+| after lifecycle restructure — this branch | 19,460 | 19,709 | `2b1d26c119c071bd` | — | `True` | 0 |
 
 (§-row sha256 was captured pre-trim; the headroom-trim row's builder run was not re-hashed — the verbatim/probe evidence above carries.)
 
-Trim reduction: 10,433 chars / 10,990 bytes (35.2%). The §7 output-medium order (`docs/03-output-medium-doctrine.md`) then added 558 chars, for a net 9,875 chars / 33.4% below `main`. Headroom after the codegraph trim: 581 chars (2.9% of the cap), above the 500-char floor AC-CTX-003 now enforces.
+Trim reduction: 10,433 chars / 10,990 bytes (35.2%). The §7 output-medium order (`docs/03-output-medium-doctrine.md`) then added 558 chars, for a net 9,875 chars / 33.4% below `main`. Headroom after the codegraph trim: 581 chars (2.9% of the cap), above the 500-char floor AC-CTX-003 now enforces. The lifecycle restructure (Development stage D0–D4 + Delivery stage `sub1`–`sub4`, opt-in UAT `sub4`/`sub5`) added ~1,000 chars of content and paid for it by stating the four skill lines once as a shared footer instead of in every prompt block, collapsing the kickoff block to one line, and dropping the derivable *Output* column of the skill-to-phase table: net +41 chars, headroom 540.
 
 ### Composition of the trimmed file
 
@@ -58,6 +59,8 @@ Nine regions are **byte-identical** to the pre-edit snapshot — 10,313 chars, t
 | *Running the pipeline without `/goal`* heading | 40 |
 | phase table (kickoff, `sub1`–`sub4`) | 1,147 |
 | skill-to-phase mapping table | 954 |
+
+The lifecycle restructure deliberately reshaped the last four regions: each `sub` block's instruction lines are byte-identical, but the four repeated skill lines now live once in a *Shared footer*; the kickoff row moved into the Development table as `D1`; the phase table gained a UAT row; the mapping table lost its *Output* column. The first five regions remain byte-identical to `main` @ `11b00e1`. `tests/unit/test_agents_md_lifecycle.py` (`AC-LC-001`–`003`) guards the new layout, including that each footer line appears exactly once.
 
 Everything else is **compressed or reflowed with every rule retained**, each rule ending in a pointer to where its detail lives: funnel rules 1–10 (wording tightened; all ten gates and the three CI-enforcement strings intact), the Harness Adapter tail prose (root-cause binding), the `/goal` closing prose, *Standing Orders* §1–§6 collapsed to one line per rule, *Repository Structure* and *Development Commands* reduced to their load-bearing lines plus a `README.md` pointer, and *Security* reduced to one line per rule.
 
@@ -82,15 +85,15 @@ Each failure message names the cap/floor, the lossy head-70/tail-20 middle trunc
 # NB: under a non-UTF-8 locale (here LC_ALL=C) wc -m silently counts BYTES and matches
 # wc -c. This file carries 106 non-ASCII characters, so the two readings differ by 206.
 LC_ALL=C.UTF-8 wc -m AGENTS.md
-# -> 19419 AGENTS.md
+# -> 19460 AGENTS.md
 wc -c AGENTS.md
-# -> 19419 AGENTS.md
+# -> 19709 AGENTS.md
 
 # The headroom floor + host-cap override, exercised
 AGENTS_MD_CAP_CHARS=19800 python3 -m pytest tests/unit/test_agents_md_budget.py -v
-# -> AC-CTX-003 FAILS (headroom 381 < 500 under the lower cap) — the override flows
+# -> AC-CTX-003 FAILS (headroom 340 < 500 under the lower cap) — the override flows
 python3 -m pytest tests/unit -q
-# -> 9 passed (001, 002, 003 all green at the default cap)
+# -> all passed (AC-CTX-001..003 green at the default cap)
 
 # Delivered through the REAL prompt builder: whole file present, no truncation warning
 HERMES_HOME=~/.hermes/profiles/<profile> /app/venv/bin/python3 - <<'PY'
@@ -101,7 +104,7 @@ out = pb.build_context_files_prompt(cwd=".", context_length=None)
 warn = [w for w in (pb.drain_truncation_warnings() or []) if "TRUNCATED" in w]
 print("chars", len(raw), "| verbatim", raw in out, "| warnings", warn)
 PY
-# -> chars 19419 | verbatim True | warnings []
+# -> chars 19460 | verbatim True | warnings []
 
 # The tripwire, via the repo's own runner
 bash tests/run.sh
@@ -110,16 +113,16 @@ bash tests/run.sh
 sha256sum AGENTS.md
 ```
 
-Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,419; the probe prints `verbatim True` with an empty warning list; the unit tier is `9 passed` and the override probe turns AC-CTX-003 red as documented.
+Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,460; the probe prints `verbatim True` with an empty warning list; the unit tier is green and the override probe turns AC-CTX-003 red as documented.
 
 ## What Works
 
-- `AGENTS.md` is delivered whole — 19,419 chars against a 20,000-char cap, with 581 chars (2.9%) of headroom, above the 500-char floor
+- `AGENTS.md` is delivered whole — 19,460 chars against a 20,000-char cap, with 540 chars (2.7%) of headroom, above the 500-char floor
 - The real prompt builder returns the file verbatim (`raw in out == True`) and queues **zero** `TRUNCATED` warnings, down from one at 29,598 chars
-- All nine contract regions are byte-identical to the pre-edit snapshot, and every tightened region retains all ten funnel rules, the three CI-enforcement strings (rules 3, 9, 10), the root-cause binding and the `/goal` phase prose
+- The five funnel/harness contract regions are byte-identical, the `sub` block instructions survive the footer dedupe byte-for-byte, and every tightened region retains all ten funnel rules, the three CI-enforcement strings (rules 3, 9, 10), the root-cause binding and the `/goal` phase prose
 - Every `§N` cross-reference used elsewhere in the repo (`§5`, `§6`, `§Security`, `§codegraph` — in `tests/run.sh`, `.github/workflows/ci.yml`, `README.md`, `docs/`) still resolves against the trimmed headings
 - All four harness entry-point symlinks resolve: `CLAUDE.md`, `.github/copilot-instructions.md`, `.claude/skills`, `.claude/plugins`
-- The unit tier is green (9 tests), and the three tripwires make regression, a host-pinned cap, and headroom exhaustion loud instead of silent
+- The unit tier is green, and the three tripwires make regression, a host-pinned cap, and headroom exhaustion loud instead of silent
 - The headroom floor is proven to bite: `AGENTS_MD_CAP_CHARS=19800` flips AC-CTX-003 red while 001/002 stay green
 
 ## What Fails
@@ -134,4 +137,4 @@ Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,419; the probe prints `verbatim True
 
 ## Verdict
 
-**works** — The file reaches the prompt byte-for-byte under the cap with zero truncation warnings, all nine contract regions and all ten funnel rules survive, and three hermetic tripwires now fail loudly on: regression over the cap (AC-CTX-001), a host-pinned cap exported into the environment (AC-CTX-002), and headroom exhaustion before the cap is reached (AC-CTX-003, floor 500 chars — current headroom 581). The locale dependence of `wc -m` remains an operator trap, but the binding assertions are Python-side and immune.
+**works** — The file reaches the prompt byte-for-byte under the cap with zero truncation warnings, all contract regions and all ten funnel rules survive, and three hermetic tripwires now fail loudly on: regression over the cap (AC-CTX-001), a host-pinned cap exported into the environment (AC-CTX-002), and headroom exhaustion before the cap is reached (AC-CTX-003, floor 500 chars — current headroom 540). The locale dependence of `wc -m` remains an operator trap, but the binding assertions are Python-side and immune.
