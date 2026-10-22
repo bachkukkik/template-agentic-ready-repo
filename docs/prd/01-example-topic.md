@@ -15,6 +15,8 @@
 
 - **SC3** — The service shall serve those routes over a real socket, out of process. _Verify:_ `tests/integration/test_service_endpoints.py` (AC-EXM-201..203).
 
+- **SC4** — No tracked compose file shall publish a host port; host access is opt-in per deployment via a gitignored `docker-compose.override.yml`. _Verify:_ `tests/unit/test_compose_no_host_ports.py` (AC-EXM-004, AC-EXM-005).
+
 ## Test Mapping
 
 | Expected behavior | Test file | Test IDs |
@@ -22,6 +24,7 @@
 | `/health`, `/`, and an unknown path map to 200/200/404 | `tests/unit/test_routing.py` | AC-EXM-001, AC-EXM-002, AC-EXM-003 |
 | The container answers `/health` and `/` | `tests/e2e/example.bats` | AC-EXM-101, AC-EXM-102 |
 | The out-of-process service answers over HTTP | `tests/integration/test_service_endpoints.py` | AC-EXM-201, AC-EXM-202, AC-EXM-203 |
+| No tracked compose file publishes a host port | `tests/unit/test_compose_no_host_ports.py` | AC-EXM-004, AC-EXM-005 |
 
 The hundreds digit encodes the tier — `0NN` unit, `1NN` e2e, `2NN` integration
 (AGENTS.md §5).

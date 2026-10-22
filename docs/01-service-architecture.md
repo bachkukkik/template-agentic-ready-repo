@@ -48,11 +48,16 @@ services:
       retries: 5
 ```
 
-No host port binding. The service is only reachable inside the Docker network. E2E tests use `docker compose exec` to reach the container directly. For direct host access in development, merge the tracked override explicitly:
+No host port binding. The service is only reachable inside the Docker network. E2E tests use `docker compose exec` to reach the container directly. Direct host access is a per-deployment opt-in. Compose auto-merges the gitignored `docker-compose.override.yml`; create one with your own port mapping:
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.host-ports.example.yml up -d
+```yaml
+services:
+  service:
+    ports:
+      - "8000:8000"
 ```
+
+This file is untracked, so derived projects never collide on a shared host.
 
 ### Test tiers
 
@@ -110,17 +115,17 @@ docker compose ps --format '{{.Name}} {{.Status}}'
 bash tests/run.sh --with-e2e
 ```
 
-`docker compose ps` must report `(healthy)`. The runner must print `7 passed` for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with `RESULT: PASSED`.
+`docker compose ps` must report `(healthy)`. The runner must print `33 passed` for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with `RESULT: PASSED`.
 
 ## What Works
 
 - Docker image builds from `service/` and reports `(healthy)` within 8 seconds of `docker compose up -d --build`
-- All fourteen tests pass locally: 9 unit + 3 integration + 2 bats
+- All 38 tests pass locally: 33 unit + 3 integration + 2 bats
 - Every tier has both a runner in `tests/run.sh` and a job in `ci.yml` — no tier is a stub
 - `bash tests/run.sh` with no flags passes without Docker running, and reports the E2E tier as skipped rather than failed
 - The integration fixture polls `/health` (0.1s interval, 5s budget) instead of sleeping a flat second — the tier completes in ~0.2s and tolerates slow cold starts
 - `bash tests/run.sh --with-e2e` starts the compose stack itself when it is down (verified: `docker compose stop service` then a green `--with-e2e` run)
-- `docker-compose.host-ports.example.yml` ships the opt-in host-port remedy as a tracked, documented override (`docker compose -f … -f … config` parses)
+- Tracked compose files bind no host port; a unit guard (AC-EXM-004, AC-EXM-005) fails any PR that tracks a `ports:` mapping
 - `act push -j secret-scan` and `act push -j unit` verified green under real act on this host (runner image `catthehacker/ubuntu` pulled, jobs succeeded)
 - The runtime image carries no test dependencies
 - CI gates E2E behind unit and integration; `secret-scan` and `doctrine` run independently
@@ -132,8 +137,8 @@ bash tests/run.sh --with-e2e
 
 ## Resolution
 
-- **E2E under `act`:** Run the act-exercisable jobs qualified — `act push -j unit`, `act push -j integration`, `act push -j secret-scan`, `act push -j doctrine` (one `-j` per invocation); exercise the E2E tier directly via `bash tests/run.sh --with-e2e` (AGENTS.md §6). The base `docker-compose.yml` keeps no host port; when direct host access is needed, merge the tracked override `docker-compose.host-ports.example.yml` explicitly.
+- **E2E under `act`:** Run the act-exercisable jobs qualified — `act push -j unit`, `act push -j integration`, `act push -j secret-scan`, `act push -j doctrine` (one `-j` per invocation); exercise the E2E tier directly via `bash tests/run.sh --with-e2e` (AGENTS.md §6). Tracked compose files bind no host port; direct host access is an untracked, per-deployment `docker-compose.override.yml`.
 
 ## Verdict
 
-**works** — The skeleton verifies end to end: three executable test tiers (14 tests green, cold-start-tolerant, e2e self-starting), five CI jobs (two of them exercised under real act), the kb/raw gate, and an opt-in host-port override. The one permanent caveat is operational, not functional: never run `act push` unqualified on a host serving this compose project (AGENTS.md §6).
+**works** — The skeleton verifies end to end: three executable test tiers (38 tests green, cold-start-tolerant, e2e self-starting), five CI jobs (two of them exercised under real act), the kb/raw gate, and a guard that keeps host ports out of tracked compose files. The one permanent caveat is operational, not functional: never run `act push` unqualified on a host serving this compose project (AGENTS.md §6).
