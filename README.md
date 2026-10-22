@@ -67,6 +67,8 @@ python3 scripts/gen-env.py --update
 |---------|------|------------|---------|
 | service | 8000 | Python 3.12 stdlib HTTP | Example microservice with /health, / endpoints |
 
+The container port is 8000. No host port is bound by default; opt in per deployment via a gitignored `docker-compose.override.yml`.
+
 ## Repository Structure
 
 ```
