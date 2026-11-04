@@ -128,3 +128,5 @@ a first opted-in run produces a review comment — that run is the stage-6 obser
 that would close these gaps.
 
 > Live enablement: this repo opted in on 2026-11-04 — `PR_AGENT_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_BASE_URL=https://litellm-sw.bachkukkik.com`, `OPENAI_DEFAULT_MODEL=openai/zai/glm-5.3-flash` (LiteLLM gateway, team-scoped virtual key `template-pr-agents-v3`). First live review run doubles as the repo-correctness proof; empirical record to follow in `docs/NN-pr-agent-live-run.md`.
+
+> Enablement verified live: the first opted-in PR (#26) flipped the AI Code Review check from `skipping` to running; a follow-up PR (this one) exercises the full describe → review → improve flow against the LiteLLM gateway model.
