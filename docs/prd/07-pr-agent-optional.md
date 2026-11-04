@@ -126,3 +126,5 @@ failure.
 tier. The upstream behavior behind each `[ASSUMPTION]` is unverified in this repo until
 a first opted-in run produces a review comment — that run is the stage-6 observation
 that would close these gaps.
+
+> Live enablement: this repo opted in on 2026-11-04 — `PR_AGENT_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_BASE_URL=https://litellm-sw.bachkukkik.com`, `OPENAI_DEFAULT_MODEL=openai/zai/glm-5.3-flash` (LiteLLM gateway, team-scoped virtual key `template-pr-agents-v3`). First live review run doubles as the repo-correctness proof; empirical record to follow in `docs/NN-pr-agent-live-run.md`.

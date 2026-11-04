@@ -1,0 +1,5 @@
+# Repo-level PR-Agent settings (read by qodo-ai/pr-agent via apply_repo_settings)
+# openai/zai/glm-5.3-flash is not in PR-Agent's MAX_TOKENS table (unknown model),
+# so the token budget must be declared here — the action fails without it.
+[config]
+custom_model_max_tokens = 32000
