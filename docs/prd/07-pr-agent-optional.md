@@ -131,3 +131,5 @@ that would close these gaps.
 > (stage 6) for the full empirical record: opt-in settings, the unknown-model and
 > `/v1` pitfalls, and the Cloudflare Bot-Fight-Mode blocker with its resolution.
 > Enablement verified live: the first opted-in PR (#26) flipped the AI Code Review check from `skipping` to running; PR #27 exercised the full describe → review → improve flow against the LiteLLM gateway model. Empirical record: `docs/08-pr-agent-live-run.md`.
+
+> Opt-out verified: `PR_AGENT_ENABLED=false` + secret removed → the AI Code Review check returns to `skipping` on every PR until opted back in. The LiteLLM virtual key `template-pr-agents-v3` remains valid at the gateway; re-enable by re-setting the secret + variable to `true`.
