@@ -127,4 +127,7 @@ tier. The upstream behavior behind each `[ASSUMPTION]` is unverified in this rep
 a first opted-in run produces a review comment — that run is the stage-6 observation
 that would close these gaps.
 
-> Live enablement: this repo opted in on 2026-11-04 — `PR_AGENT_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_BASE_URL=https://litellm-sw.bachkukkik.com`, `OPENAI_DEFAULT_MODEL=openai/zai/glm-5.3-flash` (LiteLLM gateway, team-scoped virtual key `template-pr-agents-v3`). First live review run doubles as the repo-correctness proof; empirical record to follow in `docs/NN-pr-agent-live-run.md`.
+> Live enablement: this repo opted in on 2026-11-04 — see `docs/08-pr-agent-live-run.md`
+> (stage 6) for the full empirical record: opt-in settings, the unknown-model and
+> `/v1` pitfalls, and the Cloudflare Bot-Fight-Mode blocker with its resolution.
+> Enablement verified live: the first opted-in PR (#26) flipped the AI Code Review check from `skipping` to running; PR #27 exercised the full describe → review → improve flow against the LiteLLM gateway model. Empirical record: `docs/08-pr-agent-live-run.md`.

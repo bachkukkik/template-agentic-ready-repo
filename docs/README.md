@@ -18,6 +18,7 @@
 | 03 | [Output-Medium Doctrine](03-output-medium-doctrine.md) | works | 2026-10-03 | `AGENTS.md` §7, `docs/prd/03-output-medium-doctrine.md`, `kb/{raw/articles,concepts}/`, `tests/unit/test_output_medium_doctrine.py` | [03-output-medium-doctrine](prd/03-output-medium-doctrine.md) | — |
 | 04 | [gen-env Script](04-gen-env-script.md) | works | 2026-10-03 | `scripts/gen-env.py`, `tests/unit/test_gen_env.py`, `.env.example` | [04-gen-env-script](prd/04-gen-env-script.md) | — |
 | 06 | [Quality Controls](06-quality-controls.md) | works | 2026-10-14 | `.github/workflows/{ci,sources-readonly}.yml`, `tests/unit/test_quality_controls.py`, `.github/{pull_request_template.md,dependabot.yml,CODEOWNERS}`, `SECURITY.md`, main-branch ruleset | [06-quality-controls](prd/06-quality-controls.md) | [06-quality-controls](gaps/06-quality-controls.md) |
+| 07 | [PR-Agent Live Run](08-pr-agent-live-run.md) | works | 2026-11-04 | `.github/workflows/pr-agent.yml`, `.pr_agent.toml`, `tests/unit/test_pr_agent_workflow.py`, GitHub vars/secrets `PR_AGENT_*`/`OPENAI_*`, Cloudflare zone bachkukkik.com | [07-pr-agent-optional](prd/07-pr-agent-optional.md) | — |
 
 **Verdict vocabulary** — copy the net verdict from the doc's own *Verdict* section:
 
