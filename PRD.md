@@ -37,6 +37,7 @@ Three sources feed this PRD set. When they conflict, this doctrine resolves:
 | 04 | [gen-env script](docs/prd/04-gen-env-script.md) | Accepted |
 | 05 | STE Audit | [docs/prd/05-ste-audit.md](docs/prd/05-ste-audit.md) | Accepted |
 | 06 | Quality Controls | [docs/prd/06-quality-controls.md](docs/prd/06-quality-controls.md) | Accepted |
+| 07 | PR-Agent (optional) | [docs/prd/07-pr-agent-optional.md](docs/prd/07-pr-agent-optional.md) | Accepted |
 
 ## Verification Policy
 

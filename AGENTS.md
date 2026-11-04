@@ -258,7 +258,7 @@ For any explanatory output, consume the richest useful rung: prose → STE-style
 
 ## Repository Structure
 
-`README.md` § *Repository Structure* holds the tree. Load-bearing: `.agents/` is canonical and tracked; `.claude -> .agents`, so `.claude/skills`/`.claude/plugins` resolve.
+`README.md` § *Repository Structure* holds the tree — `.agents/` is canonical and tracked; `.claude` symlinks into it.
 
 ## Development Commands
 
@@ -281,8 +281,8 @@ Tier flags: `tests/run.sh`; per-tier: `README.md` *Testing*.
 
 ## codegraph
 
-[CodeGraph](https://github.com/colbymchenry/codegraph) — **primary graph search for coding agents** (tree-sitter → SQLite over MCP). Install + MCP wiring: `README.md`. MCP exposes **one tool by design** — `codegraph_explore`; `codegraph sync` before trusting the graph; tests via `codegraph affected --stdin`; CI sets `DO_NOT_TRACK=1`; CLI twins. → `kb/entities/codegraph.md`
+[CodeGraph](https://github.com/colbymchenry/codegraph) — **primary graph search for coding agents** (tree-sitter → SQLite over MCP). Install + MCP wiring: `README.md`; capabilities, env vars, CLI: `kb/entities/codegraph.md`; vs graphify (non-code knowledge graph): `kb/comparisons/codegraph-vs-graphify.md`.
 
-### graphify (optional)
+## pr-agent (optional)
 
-Non-code knowledge graph (docs, SQL, configs, PDFs) — not the graph search: `graphify query|path|explain`. → `kb/comparisons/codegraph-vs-graphify.md`
+Opt-in AI PR review via [PR-Agent](https://github.com/qodo-ai/pr-agent) (Apache-2.0): repo variable `PR_AGENT_ENABLED=true` + secret `OPENAI_API_KEY`, vars `OPENAI_BASE_URL`, `OPENAI_DEFAULT_MODEL`; intent/SC `docs/prd/07-pr-agent-optional.md`; local markers `.env.example`.

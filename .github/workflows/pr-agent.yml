@@ -1,0 +1,75 @@
+# PR-Agent — optional AI code review
+#
+# OFF by default. Nothing here runs until a maintainer sets the repository
+# variable PR_AGENT_ENABLED to "true" (Settings -> Secrets and variables ->
+# Actions -> Variables). The gate is a variable and not a secret on purpose:
+# a job-level `if` cannot reliably test `secrets.*`, and the switch must be
+# explicit rather than implicit-by-key-presence.
+#
+# Scope: the `pull_request` trigger only — never its `_target` sibling, which
+# exists to run with a write token against untrusted PR code and is excluded
+# here by design (AC-QC-004). PR-Agent reads the diff and answers as PR review
+# comments, so the job elevates to pull-requests + issues write and nothing
+# else.
+#
+# Fork PRs: the job's `if:` carries an explicit same-repo guard
+# (`github.event.pull_request.head.repo.full_name == github.repository`), so a
+# fork PR skips the job by construction — reviews run on same-repo branches
+# only. The guard is not a workaround for secret scoping: a `pull_request` run
+# from a fork never receives repository secrets either, so the review could not
+# happen there regardless.
+#
+# Customization: three points only — repo variable OPENAI_BASE_URL, secret
+# OPENAI_API_KEY, variable OPENAI_DEFAULT_MODEL (the conventional names). PR-Agent
+# reads dynaconf settings with SECTION__KEY env overrides and calls models through
+# LiteLLM, so any OpenAI-compatible endpoint works (LiteLLM gateway, vLLM,
+# Ollama, OpenRouter, ...). See docs/prd/07-pr-agent-optional.md.
+name: PR-Agent
+
+on:
+  pull_request:
+    # `ready_for_review` covers the draft -> ready transition, which `opened`
+    # alone would miss.
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Deny-all default token scope (AC-QC-001): an omitted `permissions:` key
+# inherits the repo default, which may include write scope. The one job below
+# elevates to what PR-Agent needs to read the PR and post its comments.
+permissions: {}
+
+# One review run per PR at a time: overlapping `synchronize` pushes would
+# otherwise start a second paid-model review while the first is still posting,
+# double-commenting the PR. A newer push cancels the in-flight run.
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-agent:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The opt-in switch. Unset or any value other than "true" -> job skipped.
+    # The second conjunct keeps reviews on same-repo branches: a fork PR fails
+    # the guard regardless of the variable, so "reviews stay same-repo" holds by
+    # construction rather than by secret scoping alone.
+    if: vars.PR_AGENT_ENABLED == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      pull-requests: write   # review + inline comments on the PR
+      issues: write          # PR-Agent also answers through issue comments
+    env:
+      # dynaconf SECTION__KEY overrides — the three customization points.
+      # Source names: var OPENAI_BASE_URL, secret OPENAI_API_KEY, var OPENAI_DEFAULT_MODEL.
+      # `||` fallbacks matter: an unset Actions variable interpolates to the empty
+      # string, which would *override* the dynaconf default with "". The documented
+      # minimum setup is PR_AGENT_ENABLED + OPENAI_API_KEY only.
+      # Fallback: OpenAI's public API base URL (https://api.openai.com/v1).
+      OPENAI__API_BASE: ${{ vars.OPENAI_BASE_URL || 'https://api.openai.com/v1' }}
+      OPENAI__KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Fallback: the `model` key of `[config]` in pr_agent/settings/configuration.toml
+      # at qodo-ai/pr-agent v0.49.0 (commit efdde4afe14aa401a3889012c7f3e9ef3081a430).
+      CONFIG__MODEL: ${{ vars.OPENAI_DEFAULT_MODEL || 'gpt-6.1-sol' }}
+      # PR-Agent reads the PR and posts its review with this token.
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: qodo-ai/pr-agent@efdde4afe14aa401a3889012c7f3e9ef3081a430 # v0.49.0
