@@ -54,6 +54,12 @@ npm i -g @colbymchenry/codegraph
 codegraph install   # wires your agent's MCP config (hermes/opencode/claude/... auto-detected)
 codegraph init      # one-time per clone: builds .codegraph/ (gitignored)
 
+# AI code review (optional, off by default) — Qodo PR-Agent, see
+# .github/workflows/pr-agent.yml. Set the repo variable PR_AGENT_ENABLED=true
+# and the secret OPENAI_API_KEY to mount it; optional vars OPENAI_BASE_URL
+# (OpenAI-compatible base URL) and OPENAI_DEFAULT_MODEL. Fork PRs never
+# receive secrets, so reviews stay on same-repo branches.
+
 # Regenerate .env from .env.example (comments preserved)
 #   --fresh: byte-identical copy for a new deployment (refuses to clobber without --force)
 #   --update: writes .env.new with this deployment's values carried in; .env is never touched
@@ -150,6 +156,9 @@ next agent working from a fresh clone — that is a repo defect, not a preferenc
 ## Testing
 
 ```bash
+# Test deps (pytest + pyyaml), as in ci.yml's unit job
+pip install -r tests/requirements.txt
+
 # All tests (unit + integration)
 bash tests/run.sh
 
