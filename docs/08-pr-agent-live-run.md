@@ -10,7 +10,8 @@ The optional PR-Agent job (`.github/workflows/pr-agent.yml`) was enabled on this
 and exercised against real PRs. Opt-in configuration: repo variable
 `PR_AGENT_ENABLED=true`; secret `OPENAI_API_KEY` (LiteLLM virtual key
 `template-pr-agents-v3`, team-scoped, masked in logs); repo variables
-`OPENAI_BASE_URL=https://litellm-sw.bachkukkik.com/v1` and
+`OPENAI_BASE_URL=<gateway>/v1` (this deployment's LiteLLM gateway — the concrete
+value lives only in the repo variable, not in tracked files) and
 `OPENAI_DEFAULT_MODEL=openai/zai/glm-5.3-flash`; repo-level `.pr_agent.toml`
 declaring `custom_model_max_tokens = 32000` for the unknown gateway model.
 
@@ -34,7 +35,7 @@ the agent must post real review output through a self-hosted, non-OpenAI endpoin
      the PR head — verified in `github_provider.get_repo_settings` of v0.49.0).
    - Base URL must include `/v1` (the OpenAI SDK appends `/chat/completions`).
 4. Proof PR #27 then hit a third blocker: Cloudflare **Bot Fight Mode** on
-   `litellm-sw.bachkukkik.com` served a managed challenge to GitHub-runner IPs
+   `<gateway>` (the same LiteLLM host) served a managed challenge to GitHub-runner IPs
    (LLM responses replaced by a "Just a moment..." HTML page). This host and browsers
    passed; only datacenter ASNs were challenged. BFM is
    auth-inappropriate here — the gateway is already key-protected — so BFM was
