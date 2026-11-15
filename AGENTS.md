@@ -9,8 +9,6 @@
 
 [One-line description of the project. Stack, purpose, deployment context.]
 
-Adapt the placeholders and *(adapt to your stack)* examples.
-
 ## Read First
 
 1. *Document Funnel* below — where any writing may live; read before writing.
@@ -236,7 +234,7 @@ Report each step's *Done when* before the next; a surfacing problem re-enters D1
 Every session, every agent, every prompt — one line per rule, detail at its pointer.
 
 ### 1. Mandated Skills
-`karpathy-guidelines`+`security-best-practices` always; `webapp-testing`; `coding-agents-docs-guideline` (stage 6); `llm-wiki` (stage 3, only `kb/` writer); `root-cause` (why-questions — cited evidence); `yeet` (git); `opencode-plan-build-orchestrator`. → `README.md` skill table
+`karpathy-guidelines`+`security-best-practices` always; `webapp-testing`; `coding-agents-docs-guideline` (stage 6); `llm-wiki` (stage 3, only `kb/` writer); `root-cause` (why-questions — cited evidence); `yeet` (git); `opencode-plan-build-orchestrator`; potato-pyramid set (9 skills) → `README.md` table
 
 ### 2. Delegation Rules
 `opencode-plan-build-orchestrator`+`karpathy-guidelines` in every delegated coding goal; delegate over direct execution; the parent NEVER writes repo-tracked files (docs-only excepted); no delegation mechanism ⇒ parent codes but still reports the three steps. → `README.md` § *Harness Support*
@@ -245,7 +243,7 @@ Every session, every agent, every prompt — one line per rule, detail at its po
 No `shell=True`; no `requests` without `timeout=N`; no secret inline, logged, or in a tracked doc (env or the gitignored `.credentials/`); inbound webhook signatures verified before the payload is read; bash `set -euo pipefail` + `$()`; image tags pinned.
 
 ### 4. Verification
-Build+start, health check, test tiers, then `git diff --cached | grep -iE '(api_key|secret|token|password)' || echo "Clean"`. → `README.md` § *Testing*, `tests/run.sh`
+Build+start, health check, test tiers, `python3 scripts/audit_pyramid.py` (3-foundations gate), then `git diff --cached | grep -iE '(api_key|secret|token|password)' || echo "Clean"`. → `README.md` § *Testing*
 
 ### 5. PRD → Test → CI Pattern
 Every SC carries an inline `_Verify:` (file + ID), a Test Mapping table and a CI/CD gate; ids `AC-X-0NN` unit, `AC-X-1NN` e2e, `AC-X-2NN` integration (hundreds digit names the tier); every tier has a runner **and** a CI job; shared-infra tests are opt-in (`INTEGRATION_NEEDS_OPT_IN=1` → `RUN_INTEGRATION_TESTS=1`). → `PRD.md` § *Verification Policy*
@@ -254,7 +252,7 @@ Every SC carries an inline `_Verify:` (file + ID), a Test Mapping table and a CI
 **No PR opens on a known-red local run**: `act push -j <job>` (one `-j` per invocation — see *Development Commands*), E2E via `bash tests/run.sh --with-e2e`. **Never `act push` unqualified or `-j e2e` on a host running this project live** — the directory name is the compose project, so its `docker compose up -d --build` replaces live containers. `ci.yml` gates unit → integration → e2e + `secret-scan`/`doctrine`; `sources-readonly.yml` gates `kb/raw/**` add-only (funnel rule 3). The `doctrine` job is funnel rule 10's enforcer and the Harness Adapter's structural half. → `docs/01-service-architecture.md` § *CI pipeline*
 
 ### 7. Output-Medium Escalation
-For any explanatory output, consume the richest useful rung: prose → STE-style controlled English → diagram → HTML page → explainer video — all code-first, verified by render → parse (never by looking; works with non-visual engines). Large custom artifacts are **discardable**: build them in `scratchpads/`, never cite them (funnel rule 6). Skills per project (host-level): `simple-english`, `diagrams`, `render-verify`, `explainer-video`. → `docs/prd/03-output-medium-doctrine.md`; `kb/concepts/output-medium-escalation.md`
+For any explanatory output, consume the richest useful rung: prose → STE-style controlled English → diagram → HTML page → explainer video — all code-first, verified by render → parse (never by looking; works with non-visual engines). Large custom artifacts are **discardable**: build them in `scratchpads/`, never cite them (funnel rule 6); rung skills per `README.md` table. → `docs/prd/03-output-medium-doctrine.md`; `kb/concepts/output-medium-escalation.md`
 
 ## Repository Structure
 

@@ -1,26 +1,20 @@
-# === Environment & Secrets ===
+# Secrets & credentials are local-only; only .example shapes are tracked
+# (AGENTS.md §Security; ci.yml's secret-scan asserts it).
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 *.p12
-
-# Live credentials directory — AGENTS.md §Security calls for a *gitignored*
-# credentials dir; this is it. Real webhook specs, service-account JSON, tokens.
-# Only `.example` shapes are ever tracked, which is what ci.yml's secret-scan
-# job asserts.
 .credentials/*
 !.credentials/*.example
 !.credentials/*.example.*
 
-# === Node.js ===
 node_modules/
 dist/
 build/
 *.local
 
-# === Python ===
 __pycache__/
 *.pyc
 .venv/
@@ -29,10 +23,8 @@ venv/
 .pytest_cache/
 .mypy_cache/
 
-# === Docker ===
 docker-compose.override.yml
 
-# === IDE & OS ===
 .vscode/
 .idea/
 *.swp
@@ -41,42 +33,28 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 
-# === Logs ===
 *.log
 logs/
 
-# === Test artifacts ===
 test-results/
 coverage/
 .coverage
 htmlcov/
 
-# === Agent scratch space ===
 scratchpads/*
 !scratchpads/.gitkeep
 
-# === Harness-local dirs — the symlinks into .agents/ are tracked, runtime state is not ===
+# Harness-local runtime state — the symlinks into .agents/ stay tracked.
 .claude/*
 !.claude/skills
 !.claude/plugins
 !.claude/agents
 
-# === The doctrine is TRACKED — do not add ignores for any of these ===
-# AGENTS.md, PRD.md, docs/, kb/, tests/, .agents/, .github/ and the harness symlinks
-# are versioned artifacts, not local scaffolding (AGENTS.md funnel rule 10). kb/ in
-# particular is funnel stage 2-3: kb/raw/ is immutable source material and the layer-2
-# pages ground every PRD — unused material is archived to kb/_archive/, never deleted,
-# never ignored.
-#
-# Ignoring any of them empties the funnel for every agent working from a fresh clone,
-# and leaves the tracked .claude/* symlinks dangling once .agents/ stops being
-# committed. The `doctrine` job in .github/workflows/ci.yml fails the build if it
-# happens, so a local override here will not go unnoticed.
+# The doctrine is TRACKED (AGENTS.md funnel rule 10): never ignore AGENTS.md,
+# PRD.md, docs/, kb/, tests/, .agents/, .github/ — ci.yml's `doctrine` job
+# fails the build if any of them is ignored.
 
-# === codegraph local index (local SQLite artifact; upstream gitignores it too) ===
 .codegraph/
-
-# === graphify cache ===
 graphify-out/cache/
 graphify-out/.graphify_python
 graphify-out/.graphify_incremental.json

@@ -205,7 +205,16 @@ this repo**, so auto-detecting installers do not pollute the working tree.
 | `render-verify` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (verification glue) | §7 glue: render → parse verification — never by looking |
 | `explainer-video` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (rung 4) | §7 rung 4: HTML → MP4 via HyperFrames; needs `/dev/shm` ≥ 256 MB for the headless renderer |
 | `root-cause` | **vendored** at `.agents/skills/root-cause/` | Already present. Gates every "why does X fail / what does X require" answer; `.claude/agents/investigator.md` is its Claude Code binding |
-| `pm` | https://github.com/phuryn/pm-skills | **Caveat below** — Claude Code plugin bundle, not a plain skill |
+| `pm` | https://github.com/phuryn/pm-skills | **Caveat below** — Claude Code plugin bundle, not a plain `SKILL.md` skill |
+| `correct` | https://github.com/cursor/plugins/tree/main/pstack/skills/correct | Plain skill — single `SKILL.md`. Correction→deterministic-check loop (pyramid layer 1) |
+| `cli-for-agents` | https://github.com/cursor/plugins/tree/main/cli-for-agent/skills/cli-for-agents | Plain skill — single `SKILL.md`. Agent-friendly CLI design (layer 1) |
+| `principle-type-system-discipline` | https://github.com/cursor/plugins/tree/main/pstack/skills/principle-type-system-discipline | Plain skill — single `SKILL.md`. Types constrain agents by construction (layer 1/2) |
+| `no-comments` | https://github.com/cursor/plugins/tree/main/pstack/skills/no-comments | Plain skill — `SKILL.md` + `references/comment-sicko.md` persona. Comment suppression (layer 2) |
+| `blast-radius` | https://github.com/cursor/plugins/tree/main/pstack/skills/blast-radius | Plain skill — single `SKILL.md`. Prove safety by running the code (layer 2/3) |
+| `create-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/create-verification-skill | Plain skill — `SKILL.md` + `references/feature-map-example/`. Runtime verification + feature map (layer 3) |
+| `maintain-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/maintain-verification-skill | Plain skill — single `SKILL.md` (layer 3) |
+| `create-formal-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/create-formal-verification-skill | Plain skill — single `SKILL.md`. TLA+/formal verification skill authoring (layer 3) |
+| `maintain-formal-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/maintain-formal-verification-skill | Plain skill — single `SKILL.md` (layer 3) |
 
 ### `pm` caveat (read before installing)
 
@@ -262,6 +271,15 @@ the `:latest` of a skill can change its template or commands. The
 `opencode-plan-build-orchestrator` and `coding-agents-docs-guideline` entries
 are maintained in the user's own forks and are the canonical pair for the
 docs/prd ↔ docs/NN-slug.md workflow defined in AGENTS.md.
+
+The nine `potato-pyramid` rows above are ported from
+[cursor/plugins](https://github.com/cursor/plugins) (MIT, Lauren "poteto" Tan's
+pstack + cli-for-agent) and adapted to harness-neutral conventions: `Task`
+sub-agents become your harness's delegation mechanism, `.cursor/skills/` paths
+become `.agents/skills/`, and frontmatter carries `license: MIT` + `source:`.
+Together they carry the three deterministic foundations of the inverse pyramid
+(codebase → static analysis → verification); `scripts/audit_pyramid.py` is the
+machine gate for the same three layers and runs in the unit tier.
 
 ## License
 
