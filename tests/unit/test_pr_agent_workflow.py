@@ -158,10 +158,9 @@ def test_ac_pa_004_env_wires_the_three_customization_points():
 
 def test_ac_pa_005_env_example_documents_the_optional_capability():
     text = _env_example_text()
-    assert "# ─── PR-Agent (optional) ───" in text, (
-        "`.env.example` must end with a commented `# ─── PR-Agent (optional) ───` "
-        "section — the capability marker, matching the existing section style "
-        "(AC-PA-005)"
+    assert "# PR-Agent (optional; CI reads its own GitHub vars/secrets" in text, (
+        "`.env.example` must mark its PR-Agent block with a comment naming CI as "
+        "the real source of those values — the capability marker (AC-PA-005)"
     )
     for key in ("PR_AGENT_ENABLED", "OPENAI_BASE_URL", "OPENAI_API_KEY",
                 "OPENAI_DEFAULT_MODEL"):
