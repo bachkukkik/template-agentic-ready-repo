@@ -2,18 +2,25 @@
 
 ## What
 
-The template repo provides a minimal Python HTTP service behind Docker Compose with a three-tier test suite (unit, integration, E2E) and two GitHub Actions workflows. It demonstrates the agentic development workflow from AGENTS.md.
+The template repo provides a minimal Python HTTP service behind Docker Compose
+with a three-tier test suite (unit, integration, E2E) and two GitHub Actions
+workflows. It demonstrates the agentic development workflow from AGENTS.md.
 
 ## Why
 
-- New agent-driven projects need a working skeleton that enforces the doctrine from day one, not a blank repo.
-- A real service with real tests proves the pipeline works before any custom code is added.
-- Each tier named in AGENTS.md §5 must have a runner and a CI job, or the doctrine is decorative — the skeleton is where that is proven.
-- The doc structure itself models the `coding-agents-docs-guideline` template so agents learn by example.
+- New agent-driven projects need a working skeleton that enforces the doctrine
+  from day one, not a blank repo.
+- A real service with real tests proves the pipeline works before any custom
+  code is added.
+- Each tier named in AGENTS.md §5 must have a runner and a CI job, or the
+  doctrine is decorative — the skeleton is where that is proven.
+- The doc structure itself models the `coding-agents-docs-guideline` template so
+  agents learn by example.
 
 ## How
 
-The service lives in `service/`. It is a Python stdlib HTTP server with three endpoints:
+The service lives in `service/`. It is a Python stdlib HTTP server with three
+endpoints:
 
 | Endpoint | Method | Response | Purpose |
 |----------|--------|----------|---------|
@@ -21,7 +28,10 @@ The service lives in `service/`. It is a Python stdlib HTTP server with three en
 | `/` | GET | `{"message":"hello"}` | Root endpoint |
 | anything else | GET | `{"error":"not found"}` | 404 catch-all |
 
-Routing is a pure function, `route(path) -> (code, body)`. `Handler.do_GET` is a two-line adapter over it. The split is what makes a genuine unit tier possible: the unit tests call `route()` with no socket, and the transport is left to the integration and E2E tiers.
+Routing is a pure function, `route(path) -> (code, body)`. `Handler.do_GET` is a
+two-line adapter over it. The split is what makes a genuine unit tier possible:
+the unit tests call `route()` with no socket, and the transport is left to the
+integration and E2E tiers.
 
 ### Container image
 
@@ -33,7 +43,10 @@ EXPOSE 8000
 CMD ["python", "-m", "src.main"]
 ```
 
-The image is built from `service/` — the build context is the service directory, so `src/main.py` becomes `src.main` inside the container. The image carries no test dependencies: every tier runs outside the container (`tests/unit`, `tests/integration`) or against it (`tests/e2e`).
+The image is built from `service/` — the build context is the service directory,
+so `src/main.py` becomes `src.main` inside the container. The image carries no
+test dependencies: every tier runs outside the container (`tests/unit`,
+`tests/integration`) or against it (`tests/e2e`).
 
 ### Docker Compose
 
@@ -48,7 +61,10 @@ services:
       retries: 5
 ```
 
-No host port binding. The service is only reachable inside the Docker network. E2E tests use `docker compose exec` to reach the container directly. Direct host access is a per-deployment opt-in. Compose auto-merges the gitignored `docker-compose.override.yml`; create one with your own port mapping:
+No host port binding. The service is only reachable inside the Docker network.
+E2E tests use `docker compose exec` to reach the container directly. Direct host
+access is a per-deployment opt-in. Compose auto-merges the gitignored
+`docker-compose.override.yml`; create one with your own port mapping:
 
 ```yaml
 services:
@@ -67,9 +83,14 @@ This file is untracked, so derived projects never collide on a shared host.
 | Integration | `tests/integration/test_service_endpoints.py` | pytest | `integration` | The service out of process over a real socket (AC-EXM-201..203) |
 | E2E | `tests/e2e/example.bats` | bats | `e2e` | The running container via `docker compose exec` (AC-EXM-101..102) |
 
-The hundreds digit of the test ID names the tier (AGENTS.md §5). `tests/conftest.py` puts `service/` on `sys.path`; `tests/requirements.txt` holds the test-only dependencies.
+The hundreds digit of the test ID names the tier (AGENTS.md §5).
+`tests/conftest.py` puts `service/` on `sys.path`; `tests/requirements.txt`
+holds the test-only dependencies.
 
-`tests/run.sh` runs tier 1 and tier 2 unconditionally and tier 3 only with `--with-e2e`, so the default invocation needs no running container. It accumulates failures across tiers rather than exiting at the first, and prints `RESULT: PASSED` or `RESULT: FAILED`.
+`tests/run.sh` runs tier 1 and tier 2 unconditionally and tier 3 only with
+`--with-e2e`, so the default invocation needs no running container. It
+accumulates failures across tiers rather than exiting at the first, and prints
+`RESULT: PASSED` or `RESULT: FAILED`.
 
 ### CI pipeline
 
@@ -88,9 +109,12 @@ jobs:
     needs: []
 ```
 
-`sources-readonly.yml` is the second gate: it fails any PR that modifies or deletes a file under `kb/raw/**` without the `ingest` label, making funnel rule 3 structural rather than advisory.
+`sources-readonly.yml` is the second gate: it fails any PR that modifies or
+deletes a file under `kb/raw/**` without the `ingest` label, making funnel rule
+3 structural rather than advisory.
 
-The same chain as a diagram (AGENTS.md §7 — render the structure, don't describe it in prose):
+The same chain as a diagram (AGENTS.md §7 — render the structure, don't describe
+it in prose):
 
 ```mermaid
 graph LR
@@ -115,30 +139,59 @@ docker compose ps --format '{{.Name}} {{.Status}}'
 bash tests/run.sh --with-e2e
 ```
 
-`docker compose ps` must report `(healthy)`. The runner must print `33 passed` for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with `RESULT: PASSED`.
+`docker compose ps` must report `(healthy)`. The runner must print `33 passed`
+for unit, `3 passed` for integration, `ok 1`/`ok 2` for bats, and end with
+`RESULT: PASSED`.
 
 ## What Works
 
-- Docker image builds from `service/` and reports `(healthy)` within 8 seconds of `docker compose up -d --build`
+- Docker image builds from `service/` and reports `(healthy)` within 8 seconds
+  of `docker compose up -d --build`
 - All 38 tests pass locally: 33 unit + 3 integration + 2 bats
-- Every tier has both a runner in `tests/run.sh` and a job in `ci.yml` — no tier is a stub
-- `bash tests/run.sh` with no flags passes without Docker running, and reports the E2E tier as skipped rather than failed
-- The integration fixture polls `/health` (0.1s interval, 5s budget) instead of sleeping a flat second — the tier completes in ~0.2s and tolerates slow cold starts
-- `bash tests/run.sh --with-e2e` starts the compose stack itself when it is down (verified: `docker compose stop service` then a green `--with-e2e` run)
-- Tracked compose files bind no host port; a unit guard (AC-EXM-004, AC-EXM-005) fails any PR that tracks a `ports:` mapping
-- `act push -j secret-scan` and `act push -j unit` verified green under real act on this host (runner image `catthehacker/ubuntu` pulled, jobs succeeded)
+- Every tier has both a runner in `tests/run.sh` and a job in `ci.yml` — no tier
+  is a stub
+- `bash tests/run.sh` with no flags passes without Docker running, and reports
+  the E2E tier as skipped rather than failed
+- The integration fixture polls `/health` (0.1s interval, 5s budget) instead of
+  sleeping a flat second — the tier completes in ~0.2s and tolerates slow cold
+  starts
+- `bash tests/run.sh --with-e2e` starts the compose stack itself when it is down
+  (verified: `docker compose stop service` then a green `--with-e2e` run)
+- Tracked compose files bind no host port; a unit guard (AC-EXM-004, AC-EXM-005)
+  fails any PR that tracks a `ports:` mapping
+- `act push -j secret-scan` and `act push -j unit` verified green under real act
+  on this host (runner image `catthehacker/ubuntu` pulled, jobs succeeded)
 - The runtime image carries no test dependencies
-- CI gates E2E behind unit and integration; `secret-scan` and `doctrine` run independently
+- CI gates E2E behind unit and integration; `secret-scan` and `doctrine` run
+  independently
 
 ## What Fails
 
-- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs `docker compose up -d --build` against the host daemon — the directory name is the compose project, so it replaces live containers. Run only the exercisable jobs, qualified (see below).
-- **Repeated `-j` flags under `act` (verified 2026-10-16, act 0.2.89):** `act push -j unit -j secret-scan` runs **only Secret Scan** — every `-j` but the last is silently dropped. The AGENTS.md §6 examples that showed four `-j` flags on one line therefore executed one job while looking like four. This is why the guard exists (AGENTS.md §6): a "local CI green" claim from a multi-`-j` invocation covers one job, not the suite.
+- **E2E under `act`:** `act push` unqualified, or `act push -j e2e`, runs
+  `docker compose up -d --build` against the host daemon — the directory name is
+  the compose project, so it replaces live containers. Run only the exercisable
+  jobs, qualified (see below).
+- **Repeated `-j` flags under `act` (verified 2026-10-16, act 0.2.89):**
+  `act push -j unit -j secret-scan` runs **only Secret Scan** — every `-j` but
+  the last is silently dropped. The AGENTS.md §6 examples that showed four `-j`
+  flags on one line therefore executed one job while looking like four. This is
+  why the guard exists (AGENTS.md §6): a "local CI green" claim from a
+  multi-`-j` invocation covers one job, not the suite.
 
 ## Resolution
 
-- **E2E under `act`:** Run the act-exercisable jobs qualified — `act push -j unit`, `act push -j integration`, `act push -j secret-scan`, `act push -j doctrine` (one `-j` per invocation); exercise the E2E tier directly via `bash tests/run.sh --with-e2e` (AGENTS.md §6). Tracked compose files bind no host port; direct host access is an untracked, per-deployment `docker-compose.override.yml`.
+- **E2E under `act`:** Run the act-exercisable jobs qualified —
+  `act push -j unit`, `act push -j integration`, `act push -j secret-scan`,
+  `act push -j doctrine` (one `-j` per invocation); exercise the E2E tier
+  directly via `bash tests/run.sh --with-e2e` (AGENTS.md §6). Tracked compose
+  files bind no host port; direct host access is an untracked, per-deployment
+  `docker-compose.override.yml`.
 
 ## Verdict
 
-**works** — The skeleton verifies end to end: three executable test tiers (38 tests green, cold-start-tolerant, e2e self-starting), five CI jobs (two of them exercised under real act), the kb/raw gate, and a guard that keeps host ports out of tracked compose files. The one permanent caveat is operational, not functional: never run `act push` unqualified on a host serving this compose project (AGENTS.md §6).
+**works** — The skeleton verifies end to end: three executable test tiers (38
+tests green, cold-start-tolerant, e2e self-starting), five CI jobs (two of them
+exercised under real act), the kb/raw gate, and a guard that keeps host ports
+out of tracked compose files. The one permanent caveat is operational, not
+functional: never run `act push` unqualified on a host serving this compose
+project (AGENTS.md §6).

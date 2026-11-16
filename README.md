@@ -1,11 +1,13 @@
 # Agentic Ready Repo Template
 
-> Starter skeleton for agent-driven development. Follows the slash-storefront doctrine: AGENTS.md → PRD.md → kb/ → tests/ → CI.
+> Starter skeleton for agent-driven development. Follows the slash-storefront
+> doctrine: AGENTS.md → PRD.md → kb/ → tests/ → CI.
 
 ## Document Funnel
 
-Every piece of writing in this repo has exactly one home. Writing flows one direction
-only — full rules in [AGENTS.md](AGENTS.md#document-funnel-mandatory--every-harness-every-agent).
+Every piece of writing in this repo has exactly one home. Writing flows one
+direction only — full rules in
+[AGENTS.md](AGENTS.md#document-funnel-mandatory--every-harness-every-agent).
 
 ```
 user prompt (any harness)
@@ -26,10 +28,12 @@ GitHub issues         everything else
 ```
 
 A new `.md` that fits none of these stages is a defect — file an issue instead.
-`kb/` follows the [llm-wiki spec](https://github.com/NousResearch/hermes-agent/blob/main/skills/research/llm-wiki/SKILL.md)
-strictly; unused KB material is archived to `kb/_archive/`, never deleted. The add-only
-rule for `kb/raw/` is enforced in CI by
-[`sources-readonly.yml`](.github/workflows/sources-readonly.yml), not just by instruction.
+`kb/` follows the
+[llm-wiki spec](https://github.com/NousResearch/hermes-agent/blob/main/skills/research/llm-wiki/SKILL.md)
+strictly; unused KB material is archived to `kb/_archive/`, never
+deleted. The add-only rule for `kb/raw/` is enforced in CI by
+[`sources-readonly.yml`](.github/workflows/sources-readonly.yml), not just by
+instruction.
 
 ## Quick Start
 
@@ -73,7 +77,8 @@ python3 scripts/gen-env.py --update
 |---------|------|------------|---------|
 | service | 8000 | Python 3.12 stdlib HTTP | Example microservice with /health, / endpoints |
 
-The container port is 8000. No host port is bound by default; opt in per deployment via a gitignored `docker-compose.override.yml`.
+The container port is 8000. No host port is bound by default; opt in per
+deployment via a gitignored `docker-compose.override.yml`.
 
 ## Repository Structure
 
@@ -127,8 +132,8 @@ The container port is 8000. No host port is bound by default; opt in per deploym
 
 ## Harness Support
 
-`AGENTS.md` is the one instruction file. Harness entry points are symlinks to it, so
-adding a harness never forks the content:
+`AGENTS.md` is the one instruction file. Harness entry points are symlinks to
+it, so adding a harness never forks the content:
 
 | Harness | Entry point | Skills dir |
 |---|---|---|
@@ -146,12 +151,13 @@ ln -s ../.agents/skills <vendor-dir>/skills
 **Windows:** run `git config core.symlinks true` before cloning, or the symlinks
 land as plain text files holding a path and every entry point breaks.
 
-The `doctrine` CI job makes both failure modes loud. It fails the build when an entry
-point is a plain copy (a forked `CLAUDE.md` drifts from `AGENTS.md` with nothing to
-notice it) or a dangling link (`.claude/skills` → an absent or gitignored `.agents/`
-still commits and clones intact), and when a `.gitignore` rule hides a funnel stage.
-Ignoring `AGENTS.md`, `docs/`, `kb/` or `.github/` locally empties the funnel for the
-next agent working from a fresh clone — that is a repo defect, not a preference.
+The `doctrine` CI job makes both failure modes loud. It fails the build when an
+entry point is a plain copy (a forked `CLAUDE.md` drifts from `AGENTS.md` with
+nothing to notice it) or a dangling link (`.claude/skills` → an absent or
+gitignored `.agents/` still commits and clones intact), and when a `.gitignore`
+rule hides a funnel stage. Ignoring `AGENTS.md`, `docs/`, `kb/` or `.github/`
+locally empties the funnel for the next agent working from a fresh clone — that
+is a repo defect, not a preference.
 
 ## Testing
 
@@ -169,24 +175,32 @@ docker compose up -d --build && bash tests/run.sh --with-e2e
 python3 -m pytest tests/unit -v
 python3 -m pytest tests/integration -v
 bats tests/e2e/            # requires the container to be up
+
+# Machine gates (unit tier): pyramid, 80 columns, 20 KB per file
+python3 scripts/audit_pyramid.py
+python3 scripts/audit-chars.py        # strict by default; --advisory to report
+python3 scripts/audit-size.py
+
+# Staged secret check (AGENTS.md § 4)
+git diff --cached | grep -iE '(api_key|secret|token|password)' || echo "Clean"
 ```
 
-Test IDs follow `AC-<DOMAIN>-NNN`, where the hundreds digit names the tier: `0NN` unit,
-`1NN` e2e, `2NN` integration (AGENTS.md §5).
+Test IDs follow `AC-<DOMAIN>-NNN`, where the hundreds digit names the tier:
+`0NN` unit, `1NN` e2e, `2NN` integration (AGENTS.md §5).
 
 ## Recommended Agent Skills
 
 AGENTS.md mandates several skills across its orchestration pipeline and Standing
 Orders (§7 *Output-Medium Escalation* names four of them: the rung skills at the
 bottom of the table). Only `root-cause` is vendored into this template (at
-`.agents/skills/root-cause/`,
-because the root-cause gate and the `investigator` sub-agent depend on its exact
-procedure). Install the rest yourself. Two install targets:
+`.agents/skills/root-cause/`, because the root-cause gate and the `investigator`
+sub-agent depend on its exact procedure). Install the rest yourself. Two install
+targets:
 
-- **Host level (default)** — `~/.hermes/skills/`, `~/.claude/skills/`. Shared across
-  all your repos.
-- **Repo level** — `.agents/skills/`, reachable from every harness via its symlink.
-  Use when the skill version must travel with the repo.
+- **Host level (default)** — `~/.hermes/skills/`, `~/.claude/skills/`. Shared
+  across all your repos.
+- **Repo level** — `.agents/skills/`, reachable from every harness via its
+  symlink. Use when the skill version must travel with the repo.
 
 **Always install from a neutral cwd (`cd ~` or `cd /tmp`), never from inside
 this repo**, so auto-detecting installers do not pollute the working tree.
@@ -205,7 +219,16 @@ this repo**, so auto-detecting installers do not pollute the working tree.
 | `render-verify` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (verification glue) | §7 glue: render → parse verification — never by looking |
 | `explainer-video` | [Karpathy's output-medium post](https://x.com/karpathy/status/2105819303471976479) (rung 4) | §7 rung 4: HTML → MP4 via HyperFrames; needs `/dev/shm` ≥ 256 MB for the headless renderer |
 | `root-cause` | **vendored** at `.agents/skills/root-cause/` | Already present. Gates every "why does X fail / what does X require" answer; `.claude/agents/investigator.md` is its Claude Code binding |
-| `pm` | https://github.com/phuryn/pm-skills | **Caveat below** — Claude Code plugin bundle, not a plain skill |
+| `pm` | https://github.com/phuryn/pm-skills | **Caveat below** — Claude Code plugin bundle, not a plain `SKILL.md` skill |
+| `correct` | https://github.com/cursor/plugins/tree/main/pstack/skills/correct | Plain skill — single `SKILL.md`. Correction→deterministic-check loop (pyramid layer 1) |
+| `cli-for-agents` | https://github.com/cursor/plugins/tree/main/cli-for-agent/skills/cli-for-agents | Plain skill — single `SKILL.md`. Agent-friendly CLI design (layer 1) |
+| `principle-type-system-discipline` | https://github.com/cursor/plugins/tree/main/pstack/skills/principle-type-system-discipline | Plain skill — single `SKILL.md`. Types constrain agents by construction (layer 1/2) |
+| `no-comments` | https://github.com/cursor/plugins/tree/main/pstack/skills/no-comments | Plain skill — `SKILL.md` + `references/comment-sicko.md` persona. Comment suppression (layer 2) |
+| `blast-radius` | https://github.com/cursor/plugins/tree/main/pstack/skills/blast-radius | Plain skill — single `SKILL.md`. Prove safety by running the code (layer 2/3) |
+| `create-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/create-verification-skill | Plain skill — `SKILL.md` + `references/feature-map-example/`. Runtime verification + feature map (layer 3) |
+| `maintain-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/maintain-verification-skill | Plain skill — single `SKILL.md` (layer 3) |
+| `create-formal-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/create-formal-verification-skill | Plain skill — single `SKILL.md`. TLA+/formal verification skill authoring (layer 3) |
+| `maintain-formal-verification-skill` | https://github.com/cursor/plugins/tree/main/pstack/skills/maintain-formal-verification-skill | Plain skill — single `SKILL.md` (layer 3) |
 
 ### `pm` caveat (read before installing)
 
@@ -226,7 +249,8 @@ agent's skill format manually. Sub-bundles of interest:
 
 ### Install example (one skill)
 
-Set `SKILL_ROOT` to your harness's skill directory, then the steps are identical:
+Set `SKILL_ROOT` to your harness's skill directory, then the steps are
+identical:
 
 | Target | `SKILL_ROOT` | Verify command |
 |---|---|---|
@@ -251,17 +275,34 @@ Verify by listing the target dir — `SKILL.md` plus its subdirs must be present
 ls "$SKILL_ROOT/yeet/"
 ```
 
-If your harness has no skill mechanism at all, paste the skill's `SKILL.md` into the
-prompt instead. The rules in `AGENTS.md` still apply — a missing tool never waives them.
+If your harness has no skill mechanism at all, paste the skill's `SKILL.md` into
+the prompt instead. The rules in `AGENTS.md` still apply — a missing tool never
+waives them.
 
 ### Skill maturity and provenance
 
-These skills come from multiple authors (user forks, OpenAI curated,
-Anthropic, community). Pin to a specific commit if reproducibility matters —
-the `:latest` of a skill can change its template or commands. The
+These skills come from multiple authors (user forks, OpenAI curated, Anthropic,
+community). Pin to a specific commit if reproducibility matters — the `:latest`
+of a skill can change its template or commands. The
 `opencode-plan-build-orchestrator` and `coding-agents-docs-guideline` entries
 are maintained in the user's own forks and are the canonical pair for the
 docs/prd ↔ docs/NN-slug.md workflow defined in AGENTS.md.
+
+The nine `potato-pyramid` rows above are ported from
+[cursor/plugins](https://github.com/cursor/plugins) (MIT, Lauren "poteto" Tan's
+pstack + cli-for-agent) and adapted to harness-neutral conventions: `Task`
+sub-agents become your harness's delegation mechanism, `.cursor/skills/` paths
+become `.agents/skills/`, and frontmatter carries `license: MIT` + `source:`.
+Together they carry the three deterministic foundations of the inverse pyramid
+(codebase → static analysis → verification); `scripts/audit_pyramid.py` is the
+machine gate for the same three layers and runs in the unit tier. The other
+two machine gates run there too. `scripts/audit-chars.py` holds the repo to 80
+columns, and it is clean today; the gate is strict by default, with
+`--advisory` as the opt-out for staged adoption, and an over-cap line carrying
+a token wider than the cap (a long URL) is counted separately as
+`unbreakable` instead of failing the run, because no whitespace wrap can bring
+that token under the cap. `scripts/audit-size.py` caps every git-tracked
+file at 20 KB.
 
 ## License
 

@@ -1,15 +1,14 @@
 # Agent Instructions — [Project Name]
 
 > **This file is the single source of agent instructions for every harness.**
-> `CLAUDE.md` and `.github/copilot-instructions.md` are **symlinks** to this file —
-> edit `AGENTS.md` only. Repo-scoped skills and plugins live in `.agents/`, with each
-> harness's own directory symlinked to it. See *Harness Adapter* below.
+> `CLAUDE.md` and `.github/copilot-instructions.md` are **symlinks** to this
+> file — edit `AGENTS.md` only. Repo-scoped skills and plugins live in
+> `.agents/`, with each harness's own directory symlinked to it. See *Harness
+> Adapter* below.
 
 ## What This Is
 
 [One-line description of the project. Stack, purpose, deployment context.]
-
-Adapt the placeholders and *(adapt to your stack)* examples.
 
 ## Read First
 
@@ -19,15 +18,18 @@ Adapt the placeholders and *(adapt to your stack)* examples.
 4. `kb/index.md` — stage-3 knowledge catalog.
 5. `README.md` — quick start, services, structure, tests, skills.
 
-> **Three indexes, three layers, no overlap:** `kb/index.md`, `PRD.md`, `docs/README.md` (knowledge / intent / verified reality).
-> **Planned vs Working:** `docs/prd/` = intent, `docs/NN-slug.md` = reality, edited only via `coding-agents-docs-guideline`. → `docs/README.md`
+> **Three indexes, three layers, no overlap:** `kb/index.md`, `PRD.md`,
+> `docs/README.md` (knowledge / intent / verified reality). **Planned vs
+> Working:** `docs/prd/` = intent, `docs/NN-slug.md` = reality, edited only via
+> `coding-agents-docs-guideline`. → `docs/README.md`
 
 ---
 
 ## Document Funnel (MANDATORY — every harness, every agent)
 
-Writing flows in **one direction only** — each stage narrows and hardens what the stage above
-it produced. Know which stage your output belongs to *before* writing, and never skip a stage.
+Writing flows in **one direction only** — each stage narrows and hardens what
+the stage above it produced. Know which stage your output belongs to *before*
+writing, and never skip a stage.
 
 ```
 user prompt (desire + imagination, any harness)
@@ -67,16 +69,43 @@ anything else           GitHub issue, or a comment on an existing issue
 
 ### Funnel rules
 
-1. **No stray documents.** A new `.md` outside stages 1–6 is a defect — no `NOTES.md`, no `TODO.md`, no `ANALYSIS.md` at repo root. If it fits no stage, it is an **issue**: file one, or comment on the existing one.
-2. **Grounding direction is downward.** A stage may assert only what an upstream stage supports: a PRD claim with no `kb/` backing is `[ASSUMPTION]`-marked or dropped, and a `docs/NN-slug.md` claim with no verification command is not a claim.
-3. **`kb/raw/` is append-or-archive.** Never rewrite a raw source; superseded files move to `kb/_archive/` preserving their path. Enforced in CI by `.github/workflows/sources-readonly.yml`.
-4. **`kb/` layer-2 pages are never hand-written.** Update `kb/raw/`, then run the `llm-wiki` skill against `./kb/`, following its spec strictly; vendor the revision you pin at `.agents/skills/llm-wiki/SKILL.md`.
-5. **Unused knowledge is archived, not deleted.** `kb/_archive/` is the terminus for stage 2–3 material — remove it from `index.md`, replace inbound wikilinks with plain text + "(archived)", log it in `kb/log.md`.
-6. **`scratchpads/` is never cited.** No tracked document may reference a scratchpad path as evidence — promote the content to `kb/raw/` first.
-7. **Gaps are transient.** A `docs/gaps/` file closes by producing one of: a `kb/raw/` ingest, a PRD edit, a code change with tests, or an issue — state which in its *Resolution*, then it may be archived out of the repo.
-8. **Skill gates are absolute.** Stage 3 requires `llm-wiki`; stage 6 requires `coding-agents-docs-guideline`. No harness mechanism for a skill = paste its `SKILL.md` into the prompt and follow it manually. A missing tool never waives the gate.
-9. **Never write a secret into `kb/` or `docs/`.** Both are tracked and `kb/raw/` is the ingest target for exactly the material carrying live values, so a verbatim paste is the usual way a credential enters. Record *that a secret exists and where it is configured* (`.env` var name, `.credentials/` filename), never its value; redact before ingest, never after — `kb/raw/` is add-only, so a leak there costs a rotation plus an archive. Enforced in CI by the `secret-scan` job.
-10. **The doctrine itself is tracked.** `AGENTS.md`, `PRD.md`, `docs/`, `kb/`, `tests/`, `.agents/`, `.github/` and the harness symlinks are versioned artifacts, not local scaffolding — a `.gitignore` entry hiding any of them empties the funnel for every agent on a fresh clone. Enforced by the `doctrine` job in `.github/workflows/ci.yml`.
+1. **No stray documents.** A new `.md` outside stages 1–6 is a defect — no
+`NOTES.md`, no `TODO.md`, no `ANALYSIS.md` at repo root. If it fits no stage, it
+is an **issue**: file one, or comment on the existing one.
+2. **Grounding direction is downward.** A stage may assert only what an upstream
+stage supports: a PRD claim with no `kb/` backing is `[ASSUMPTION]`-marked or
+dropped, and a `docs/NN-slug.md` claim with no verification command is not a
+claim.
+3. **`kb/raw/` is append-or-archive.** Never rewrite a raw source; superseded
+files move to `kb/_archive/` preserving their path. Enforced in CI by
+`.github/workflows/sources-readonly.yml`.
+4. **`kb/` layer-2 pages are never hand-written.** Update `kb/raw/`, then run
+the `llm-wiki` skill against `./kb/`, following its spec strictly; vendor the
+revision you pin at `.agents/skills/llm-wiki/SKILL.md`.
+5. **Unused knowledge is archived, not deleted.** `kb/_archive/` is the terminus
+for stage 2–3 material — remove it from `index.md`, replace inbound wikilinks
+with plain text + "(archived)", log it in `kb/log.md`.
+6. **`scratchpads/` is never cited.** No tracked document may reference a
+scratchpad path as evidence — promote the content to `kb/raw/` first.
+7. **Gaps are transient.** A `docs/gaps/` file closes by producing one of: a
+`kb/raw/` ingest, a PRD edit, a code change with tests, or an issue — state
+which in its *Resolution*, then it may be archived out of the repo.
+8. **Skill gates are absolute.** Stage 3 requires `llm-wiki`; stage 6 requires
+`coding-agents-docs-guideline`. No harness mechanism for a skill = paste its
+`SKILL.md` into the prompt and follow it manually. A missing tool never waives
+the gate.
+9. **Never write a secret into `kb/` or `docs/`.** Both are tracked and
+`kb/raw/` is the ingest target for exactly the material carrying live values, so
+a verbatim paste is the usual way a credential enters. Record *that a secret
+exists and where it is configured* (`.env` var name, `.credentials/` filename),
+never its value; redact before ingest, never after — `kb/raw/` is add-only, so a
+leak there costs a rotation plus an archive. Enforced in CI by the `secret-scan`
+job.
+10. **The doctrine itself is tracked.** `AGENTS.md`, `PRD.md`, `docs/`, `kb/`,
+`tests/`, `.agents/`, `.github/` and the harness symlinks are versioned
+artifacts, not local scaffolding — a `.gitignore` entry hiding any of them
+empties the funnel for every agent on a fresh clone. Enforced by the `doctrine`
+job in `.github/workflows/ci.yml`.
 
 ### Where does this text go?
 
@@ -94,10 +123,10 @@ anything else           GitHub issue, or a comment on an existing issue
 
 ## Harness Adapter
 
-This repo is harness-neutral. It is written against **capabilities**, not against any
-one agent product. Every rule below names a capability; each harness supplies its own
-mechanism. If your harness lacks a mechanism, perform the capability manually — a
-missing tool never waives the rule.
+This repo is harness-neutral. It is written against **capabilities**, not
+against any one agent product. Every rule below names a capability; each harness
+supplies its own mechanism. If your harness lacks a mechanism, perform the
+capability manually — a missing tool never waives the rule.
 
 | Capability | Hermes | Claude Code | Copilot / other | Generic fallback |
 |---|---|---|---|---|
@@ -134,19 +163,23 @@ Adding a harness = two symlinks (`ln -s AGENTS.md <entry-file>` and
 Never fork the content, never duplicate a skill per harness.
 
 
-`.agents/skills/` holds this project's pinned skills; everything else installs at **host**
-level. This template pins `root-cause` (the root-cause gate below depends on its exact
-procedure); add `llm-wiki` and domain skills per project, vendoring only when a version must
-travel with the repo. `.claude/agents/investigator.md` binds the *root-cause gate* for Claude
-Code: a read-only sub-agent answering "why does X fail / what does X require" from cited repo
-evidence, returning an explicit "not found", not a guess. Harnesses without sub-agents run the
-same procedure inline from `.agents/skills/root-cause/SKILL.md`.
+`.agents/skills/` holds this project's pinned skills; everything else installs
+at **host** level. This template pins `root-cause` (the root-cause gate below
+depends on its exact procedure); add `llm-wiki` and domain skills per project,
+vendoring only when a version must travel with the repo.
+`.claude/agents/investigator.md` binds the *root-cause gate* for Claude Code: a
+read-only sub-agent answering "why does X fail / what does X require" from cited
+repo evidence, returning an explicit "not found", not a guess. Harnesses without
+sub-agents run the same procedure inline from
+`.agents/skills/root-cause/SKILL.md`.
 
 ---
 
 ## Lifecycle — Zero to Deployment (coding-agent entry point)
 
-Every substantive request — a new project from this template, or an update to an existing one — runs two stages in order. The coding agent MUST follow this sequence.
+Every substantive request — a new project from this template, or an update to an
+existing one — runs two stages in order. The coding agent MUST follow this
+sequence.
 
 ### Development stage — idea → implemented
 
@@ -160,7 +193,8 @@ Every substantive request — a new project from this template, or an update to 
 
 **Kickoff prompt:** `/goal <whatever user request>` + the shared footer.
 
-**Shared footer** — append to the kickoff and every sub block (sub2/sub3: prefix `if problems surface, `):
+**Shared footer** — append to the kickoff and every sub block (sub2/sub3: prefix
+`if problems surface, `):
 
 ```
 use pm skills for PRD, problem triage, success criteria definition and verification policy.
@@ -189,7 +223,8 @@ then git checkout main and pull here.
 lastly do full redeployment cycle from pull to serve.
 ```
 
-**UAT variant (opt-in)** — a repo with a `uat` branch + UAT stack replaces `sub4` with these; the contract becomes `sub1`–`sub5`:
+**UAT variant (opt-in)** — a repo with a `uat` branch + UAT stack replaces
+`sub4` with these; the contract becomes `sub1`–`sub5`:
 
 ```
 ## sub4 — merge to uat + redeploy
@@ -205,7 +240,10 @@ lastly do full redeployment cycle from pull to serve — the production stack.
 
 ### Running the pipeline without `/goal`
 
-`/goal` is a Hermes slash command; a harness without it prompts the same steps in order — the `D0`–`D4` and `sub1`–`sub4` (UAT: `sub1`–`sub5`) labels are the cross-harness contract, so **"go through sub1-4"** is valid everywhere. Or use this table:
+`/goal` is a Hermes slash command; a harness without it prompts the same steps
+in order — the `D0`–`D4` and `sub1`–`sub4` (UAT: `sub1`–`sub5`) labels are the
+cross-harness contract, so **"go through sub1-4"** is valid everywhere. Or use
+this table:
 
 | # | Phase | Do | Done when |
 |---|-------|----|-----------|
@@ -215,9 +253,11 @@ lastly do full redeployment cycle from pull to serve — the production stack.
 | `sub4` | Merge + redeploy | Squash-merge green PRs, `git checkout main && git pull`, run the full redeploy cycle | Service healthy from a clean pull |
 | `sub4`/`sub5` (UAT) | UAT variant | As the UAT blocks above | UAT, then production, healthy from a clean pull |
 
-Report each step's *Done when* before the next; a surfacing problem re-enters D1 triage first.
+Report each step's *Done when* before the next; a surfacing problem re-enters D1
+triage first.
 
-**Skill-to-phase mapping** (install per README; substitute equivalents your harness ships):
+**Skill-to-phase mapping** (install per README; substitute equivalents your
+harness ships):
 
 | Phase | Skill |
 |---|---|
@@ -233,32 +273,66 @@ Report each step's *Done when* before the next; a surfacing problem re-enters D1
 
 ## Standing Orders (ALWAYS apply)
 
-Every session, every agent, every prompt — one line per rule, detail at its pointer.
+Every session, every agent, every prompt — one line per rule, detail at its
+pointer.
 
 ### 1. Mandated Skills
-`karpathy-guidelines`+`security-best-practices` always; `webapp-testing`; `coding-agents-docs-guideline` (stage 6); `llm-wiki` (stage 3, only `kb/` writer); `root-cause` (why-questions — cited evidence); `yeet` (git); `opencode-plan-build-orchestrator`. → `README.md` skill table
+`karpathy-guidelines`+`security-best-practices` always; `webapp-testing`;
+`coding-agents-docs-guideline` (stage 6); `llm-wiki` (stage 3, only `kb/`
+writer); `root-cause` (why-questions — cited evidence); `yeet` (git);
+`opencode-plan-build-orchestrator`; potato-pyramid set (9 skills) → `README.md`
+table
 
 ### 2. Delegation Rules
-`opencode-plan-build-orchestrator`+`karpathy-guidelines` in every delegated coding goal; delegate over direct execution; the parent NEVER writes repo-tracked files (docs-only excepted); no delegation mechanism ⇒ parent codes but still reports the three steps. → `README.md` § *Harness Support*
+`opencode-plan-build-orchestrator`+`karpathy-guidelines` in every delegated
+coding goal; delegate over direct execution; the parent NEVER writes
+repo-tracked files (docs-only excepted); no delegation mechanism ⇒ parent codes
+but still reports the three steps. → `README.md` § *Harness Support*
 
 ### 3. Code Quality Rules
-No `shell=True`; no `requests` without `timeout=N`; no secret inline, logged, or in a tracked doc (env or the gitignored `.credentials/`); inbound webhook signatures verified before the payload is read; bash `set -euo pipefail` + `$()`; image tags pinned.
+No `shell=True`; no `requests` without `timeout=N`; no secret inline, logged, or
+in a tracked doc (env or the gitignored `.credentials/`); inbound webhook
+signatures verified before the payload is read; bash `set -euo pipefail` +
+`$()`; image tags pinned.
 
 ### 4. Verification
-Build+start, health check, test tiers, then `git diff --cached | grep -iE '(api_key|secret|token|password)' || echo "Clean"`. → `README.md` § *Testing*, `tests/run.sh`
+Build+start, health check, test tiers, then three gates:
+`python3 scripts/audit_pyramid.py` (3 foundations),
+`python3 scripts/audit-chars.py` (80 cols, strict),
+`python3 scripts/audit-size.py` (20 KB/file), then the staged secret
+grep in `README.md` § *Testing*.
 
 ### 5. PRD → Test → CI Pattern
-Every SC carries an inline `_Verify:` (file + ID), a Test Mapping table and a CI/CD gate; ids `AC-X-0NN` unit, `AC-X-1NN` e2e, `AC-X-2NN` integration (hundreds digit names the tier); every tier has a runner **and** a CI job; shared-infra tests are opt-in (`INTEGRATION_NEEDS_OPT_IN=1` → `RUN_INTEGRATION_TESTS=1`). → `PRD.md` § *Verification Policy*
+Every SC carries an inline `_Verify:` (file + ID), a Test Mapping table and a
+CI/CD gate; ids `AC-X-0NN` unit, `AC-X-1NN` e2e, `AC-X-2NN` integration
+(hundreds digit names the tier); every tier has a runner **and** a CI job;
+shared-infra tests are opt-in (`INTEGRATION_NEEDS_OPT_IN=1` →
+`RUN_INTEGRATION_TESTS=1`). → `PRD.md` § *Verification Policy*
 
 ### 6. CI/CD Pipeline — Local-First, Then Remote
-**No PR opens on a known-red local run**: `act push -j <job>` (one `-j` per invocation — see *Development Commands*), E2E via `bash tests/run.sh --with-e2e`. **Never `act push` unqualified or `-j e2e` on a host running this project live** — the directory name is the compose project, so its `docker compose up -d --build` replaces live containers. `ci.yml` gates unit → integration → e2e + `secret-scan`/`doctrine`; `sources-readonly.yml` gates `kb/raw/**` add-only (funnel rule 3). The `doctrine` job is funnel rule 10's enforcer and the Harness Adapter's structural half. → `docs/01-service-architecture.md` § *CI pipeline*
+**No PR opens on a known-red local run**: `act push -j <job>` (one `-j` per
+invocation — see *Development Commands*), E2E via
+`bash tests/run.sh --with-e2e`. **Never `act push` unqualified or `-j e2e` on a
+host running this project live** — the directory name is the compose project, so
+its `docker compose up -d --build` replaces live containers. `ci.yml` gates unit
+→ integration → e2e + `secret-scan`/`doctrine`; `sources-readonly.yml` gates
+`kb/raw/**` add-only (funnel rule 3). The `doctrine` job is funnel rule 10's
+enforcer and the Harness Adapter's structural half. →
+`docs/01-service-architecture.md` § *CI pipeline*
 
 ### 7. Output-Medium Escalation
-For any explanatory output, consume the richest useful rung: prose → STE-style controlled English → diagram → HTML page → explainer video — all code-first, verified by render → parse (never by looking; works with non-visual engines). Large custom artifacts are **discardable**: build them in `scratchpads/`, never cite them (funnel rule 6). Skills per project (host-level): `simple-english`, `diagrams`, `render-verify`, `explainer-video`. → `docs/prd/03-output-medium-doctrine.md`; `kb/concepts/output-medium-escalation.md`
+For any explanatory output, consume the richest useful rung: prose → STE-style
+controlled English → diagram → HTML page → explainer video — all code-first,
+verified by render → parse (never by looking; works with non-visual engines).
+Large custom artifacts are **discardable**: build them in `scratchpads/`, never
+cite them (funnel rule 6); rung skills per `README.md` table. →
+`docs/prd/03-output-medium-doctrine.md`;
+`kb/concepts/output-medium-escalation.md`
 
 ## Repository Structure
 
-`README.md` § *Repository Structure* holds the tree — `.agents/` is canonical and tracked; `.claude` symlinks into it.
+`README.md` § *Repository Structure* holds the tree — `.agents/` is canonical
+and tracked; `.claude` symlinks into it.
 
 ## Development Commands
 
@@ -273,16 +347,26 @@ Tier flags: `tests/run.sh`; per-tier: `README.md` *Testing*.
 
 ## Security
 
-- **Never commit `.env`, API keys or JWT secrets** — only `.example` shapes are tracked; CI's `secret-scan` enforces it.
+- **Never commit `.env`, API keys or JWT secrets** — only `.example` shapes are
+tracked; CI's `secret-scan` enforces it.
 - Credentials come from env or the gitignored `.credentials/`, never hardcoded.
-- **No live value in `kb/` or `docs/`** (funnel rule 9) — `kb/raw/` is add-only, so a leak is uneditable.
-- **Inbound webhook deliveries are signature-verified before the payload is read**; a sender with no stored secret is rejected, not parsed.
-- Signing secrets are keyed per sender — one sender cannot sign another's deliveries.
+- **No live value in `kb/` or `docs/`** (funnel rule 9) — `kb/raw/` is add-only,
+so a leak is uneditable.
+- **Inbound webhook deliveries are signature-verified before the payload is
+read**; a sender with no stored secret is rejected, not parsed.
+- Signing secrets are keyed per sender — one sender cannot sign another's
+deliveries.
 
 ## codegraph
 
-[CodeGraph](https://github.com/colbymchenry/codegraph) — **primary graph search for coding agents** (tree-sitter → SQLite over MCP). Install + MCP wiring: `README.md`; capabilities, env vars, CLI: `kb/entities/codegraph.md`; vs graphify (non-code knowledge graph): `kb/comparisons/codegraph-vs-graphify.md`.
+[CodeGraph](https://github.com/colbymchenry/codegraph) — **primary graph search
+for coding agents** (tree-sitter → SQLite over MCP). Install + MCP wiring:
+`README.md`; capabilities, env vars, CLI: `kb/entities/codegraph.md`; vs
+graphify (non-code knowledge graph): `kb/comparisons/codegraph-vs-graphify.md`.
 
 ## pr-agent (optional)
 
-Opt-in AI PR review via [PR-Agent](https://github.com/qodo-ai/pr-agent) (Apache-2.0): repo variable `PR_AGENT_ENABLED=true` + secret `OPENAI_API_KEY`, vars `OPENAI_BASE_URL`, `OPENAI_DEFAULT_MODEL`; intent/SC `docs/prd/07-pr-agent-optional.md`; local markers `.env.example`.
+Opt-in AI PR review via [PR-Agent](https://github.com/qodo-ai/pr-agent)
+(Apache-2.0): repo variable `PR_AGENT_ENABLED=true` + secret `OPENAI_API_KEY`,
+vars `OPENAI_BASE_URL`, `OPENAI_DEFAULT_MODEL`; intent/SC
+`docs/prd/07-pr-agent-optional.md`; local markers `.env.example`.

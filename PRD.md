@@ -38,6 +38,8 @@ Three sources feed this PRD set. When they conflict, this doctrine resolves:
 | 05 | STE Audit | [docs/prd/05-ste-audit.md](docs/prd/05-ste-audit.md) | Accepted |
 | 06 | Quality Controls | [docs/prd/06-quality-controls.md](docs/prd/06-quality-controls.md) | Accepted |
 | 07 | PR-Agent (optional) | [docs/prd/07-pr-agent-optional.md](docs/prd/07-pr-agent-optional.md) | Accepted |
+| 09 | Char-Per-Line Audit | [docs/prd/09-char-per-line-audit.md](docs/prd/09-char-per-line-audit.md) | Accepted |
+| 10 | File-Size Audit | [docs/prd/10-file-size-audit.md](docs/prd/10-file-size-audit.md) | Accepted |
 
 ## Verification Policy
 

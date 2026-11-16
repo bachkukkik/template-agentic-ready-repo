@@ -1,8 +1,8 @@
 # docs/gaps — Gap Observations
 
 Funnel stage 5 (see *Document Funnel* in `AGENTS.md`). A gap doc records **one
-observed divergence** between two adjacent funnel stages. It is transient: it exists
-to be closed.
+observed divergence** between two adjacent funnel stages. It is transient: it
+exists to be closed.
 
 Two kinds, and only two:
 
@@ -11,8 +11,8 @@ Two kinds, and only two:
 | `kb ↔ prd` | The PRD asserts something the KB does not support, or the KB holds knowledge no PRD acts on | PRD written ahead of the knowledge, or stale intent |
 | `prd ↔ code` | The codebase does not do what the PRD says, or does something no PRD asked for | drift, undocumented work, abandoned intent |
 
-Divergence between *PRD* and *observed runtime behaviour* is not a gap doc — that is
-stage 6, `docs/NN-slug.md`, authored via `coding-agents-docs-guideline`.
+Divergence between *PRD* and *observed runtime behaviour* is not a gap doc —
+that is stage 6, `docs/NN-slug.md`, authored via `coding-agents-docs-guideline`.
 
 ## Naming
 
