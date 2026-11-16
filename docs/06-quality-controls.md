@@ -1,7 +1,8 @@
 # 06 — Quality Controls (Codified Review & QC Gates)
 
-> Funnel stage 6 — empirical status. PRD: [docs/prd/06-quality-controls.md](prd/06-quality-controls.md).
-> Gap record: [docs/gaps/06-quality-controls.md](gaps/06-quality-controls.md). Grounding:
+> Funnel stage 6 — empirical status. PRD:
+> [docs/prd/06-quality-controls.md](prd/06-quality-controls.md). Gap record:
+> [docs/gaps/06-quality-controls.md](gaps/06-quality-controls.md). Grounding:
 > `kb/concepts/quality-controls.md` + 4 sibling concept pages; raw dossier
 > `kb/raw/articles/quality-controls-audit-dossier.md`. Implemented in PR #15.
 
@@ -20,9 +21,10 @@ test + CI job), not prose. Three layers shipped:
    required check that closes GitHub's skipped=passing trap; `zizmor` job that
    fails on findings via exit code (annotations/CLI mode, not SARIF — SARIF
    always exits 0).
-3. **Governance files** (advisory, labelled in-file): PR template with AI-assistance
-   disclosure checkbox, Dependabot (github-actions/pip/docker, weekly), SECURITY.md
-   (private vulnerability reporting), self-owning CODEOWNERS.
+3. **Governance files** (advisory, labelled in-file): PR template with
+   AI-assistance disclosure checkbox, Dependabot (github-actions/pip/docker,
+   weekly), SECURITY.md (private vulnerability reporting), self-owning
+   CODEOWNERS.
 4. **The codified assertions**: `tests/unit/test_quality_controls.py` — 11 tests
    (AC-QC-001..010 + meta-test 012), each with verified negative controls, so the
    workflow-hygiene rules survive any future agent edit.

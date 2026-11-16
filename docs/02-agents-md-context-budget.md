@@ -2,25 +2,43 @@
 
 ## What
 
-`AGENTS.md` is the repo's single agent instruction file — every harness entry point is a symlink to it — and every harness auto-loads it into the prompt, silently truncating it above a 20,000-character context-file cap. This doc records the trim that brought it under the cap, what survived byte-for-byte, and the unit tripwire that keeps it there.
+`AGENTS.md` is the repo's single agent instruction file — every harness entry
+point is a symlink to it — and every harness auto-loads it into the prompt,
+silently truncating it above a 20,000-character context-file cap. This doc
+records the trim that brought it under the cap, what survived byte-for-byte, and
+the unit tripwire that keeps it there.
 
 ## Why
 
-- Every harness loads the instruction file into each prompt. An oversized file is not an error — it is truncated with a warning the agent never sees at task time.
-- Overflow is lossy in the **middle**: the head 70% and the tail 20% survive and the middle is dropped. Position, not importance, decides what the agent reads, so the *Standing Orders*, *Repository Structure*, *Development Commands* and *Security* sections simply vanished from the prompt.
-- A doctrine the agent cannot read is not a doctrine. The failure was silent and positional, so the fix had to keep every rule and end in a structural guard rather than a note asking people to be careful.
+- Every harness loads the instruction file into each prompt. An oversized file
+  is not an error — it is truncated with a warning the agent never sees at task
+  time.
+- Overflow is lossy in the **middle**: the head 70% and the tail 20% survive and
+  the middle is dropped. Position, not importance, decides what the agent reads,
+  so the *Standing Orders*, *Repository Structure*, *Development Commands* and
+  *Security* sections simply vanished from the prompt.
+- A doctrine the agent cannot read is not a doctrine. The failure was silent and
+  positional, so the fix had to keep every rule and end in a structural guard
+  rather than a note asking people to be careful.
 
 ## How
 
 ### The cap
 
-`CONTEXT_FILE_MAX_CHARS = 20_000` in `agent/prompt_builder.py` is the flat floor of a dynamic cap — `context_length × 4 × 0.06` characters, clamped to 20,000–500,000. The floor applies whenever the model window is not threaded through, which is the common case, so it is the number this repo targets.
+`CONTEXT_FILE_MAX_CHARS = 20_000` in `agent/prompt_builder.py` is the flat floor
+of a dynamic cap — `context_length × 4 × 0.06` characters, clamped to
+20,000–500,000. The floor applies whenever the model window is not threaded
+through, which is the common case, so it is the number this repo targets.
 
-It is a **characters** rule, not a bytes rule. Measure with `wc -m` or `len(text)`; `ls -l` and `wc -c` under-report multi-byte content and are a proxy only.
+It is a **characters** rule, not a bytes rule. Measure with `wc -m` or
+`len(text)`; `ls -l` and `wc -c` under-report multi-byte content and are a proxy
+only.
 
 ### Truncation behaviour
 
-`_truncate_content()` keeps `CONTEXT_TRUNCATE_HEAD_RATIO = 0.7` and `CONTEXT_TRUNCATE_TAIL_RATIO = 0.2` of the file and substitutes a `[...truncated …]` marker for the middle, logging:
+`_truncate_content()` keeps `CONTEXT_TRUNCATE_HEAD_RATIO = 0.7` and
+`CONTEXT_TRUNCATE_TAIL_RATIO = 0.2` of the file and substitutes a
+`[...truncated …]` marker for the middle, logging:
 
 ```
 ⚠️  Context file AGENTS.md TRUNCATED: 29611 chars exceeds limit of 20000 — trim the file, pin a larger context_file_max_chars, or use a larger-context model!
@@ -30,7 +48,8 @@ At the pre-edit size the dropped window was characters `[14000, 25611)`.
 
 ### Measurements
 
-Measured through the real builder (`pb.build_context_files_prompt`), not inferred from size:
+Measured through the real builder (`pb.build_context_files_prompt`), not
+inferred from size:
 
 | Revision | chars (`wc -m`) | bytes (`wc -c`) | sha256 (head) | AGENTS.md block delivered | full file verbatim | `TRUNCATED` warnings |
 |---|---|---|---|---|---|---|
@@ -40,13 +59,23 @@ Measured through the real builder (`pb.build_context_files_prompt`), not inferre
 | after codegraph trim — `main` @ `11b00e1` | 19,419 | 19,419+ | — | 19,433 chars | `True` | 0 |
 | after lifecycle restructure — this branch | 19,460 | 19,709 | `2b1d26c119c071bd` | — | `True` | 0 |
 
-(§-row sha256 was captured pre-trim; the headroom-trim row's builder run was not re-hashed — the verbatim/probe evidence above carries.)
+(§-row sha256 was captured pre-trim; the headroom-trim row's builder run was not
+re-hashed — the verbatim/probe evidence above carries.)
 
-Trim reduction: 10,433 chars / 10,990 bytes (35.2%). The §7 output-medium order (`docs/03-output-medium-doctrine.md`) then added 558 chars, for a net 9,875 chars / 33.4% below `main`. Headroom after the codegraph trim: 581 chars (2.9% of the cap), above the 500-char floor AC-CTX-003 now enforces. The lifecycle restructure (Development stage D0–D4 + Delivery stage `sub1`–`sub4`, opt-in UAT `sub4`/`sub5`) added ~1,000 chars of content and paid for it by stating the four skill lines once as a shared footer instead of in every prompt block, collapsing the kickoff block to one line, and dropping the derivable *Output* column of the skill-to-phase table: net +41 chars, headroom 540.
+Trim reduction: 10,433 chars / 10,990 bytes (35.2%). The §7 output-medium order
+(`docs/03-output-medium-doctrine.md`) then added 558 chars, for a net 9,875
+chars / 33.4% below `main`. Headroom after the codegraph trim: 581 chars (2.9%
+of the cap), above the 500-char floor AC-CTX-003 now enforces. The lifecycle
+restructure (Development stage D0–D4 + Delivery stage `sub1`–`sub4`, opt-in UAT
+`sub4`/`sub5`) added ~1,000 chars of content and paid for it by stating the four
+skill lines once as a shared footer instead of in every prompt block, collapsing
+the kickoff block to one line, and dropping the derivable *Output* column of the
+skill-to-phase table: net +41 chars, headroom 540.
 
 ### Composition of the trimmed file
 
-Nine regions are **byte-identical** to the pre-edit snapshot — 10,313 chars, the parts that are a cross-harness contract or are asserted by CI:
+Nine regions are **byte-identical** to the pre-edit snapshot — 10,313 chars, the
+parts that are a cross-harness contract or are asserted by CI:
 
 | Region | chars |
 |---|---|
@@ -60,15 +89,29 @@ Nine regions are **byte-identical** to the pre-edit snapshot — 10,313 chars, t
 | phase table (kickoff, `sub1`–`sub4`) | 1,147 |
 | skill-to-phase mapping table | 954 |
 
-The lifecycle restructure deliberately reshaped the last four regions: each `sub` block's instruction lines are byte-identical, but the four repeated skill lines now live once in a *Shared footer*; the kickoff row moved into the Development table as `D1`; the phase table gained a UAT row; the mapping table lost its *Output* column. The first five regions remain byte-identical to `main` @ `11b00e1`. `tests/unit/test_agents_md_lifecycle.py` (`AC-LC-001`–`003`) guards the new layout, including that each footer line appears exactly once.
+The lifecycle restructure deliberately reshaped the last four regions: each
+`sub` block's instruction lines are byte-identical, but the four repeated skill
+lines now live once in a *Shared footer*; the kickoff row moved into the
+Development table as `D1`; the phase table gained a UAT row; the mapping table
+lost its *Output* column. The first five regions remain byte-identical to `main`
+@ `11b00e1`. `tests/unit/test_agents_md_lifecycle.py` (`AC-LC-001`–`003`) guards
+the new layout, including that each footer line appears exactly once.
 
-Everything else is **compressed or reflowed with every rule retained**, each rule ending in a pointer to where its detail lives: funnel rules 1–10 (wording tightened; all ten gates and the three CI-enforcement strings intact), the Harness Adapter tail prose (root-cause binding), the `/goal` closing prose, *Standing Orders* §1–§6 collapsed to one line per rule, *Repository Structure* and *Development Commands* reduced to their load-bearing lines plus a `README.md` pointer, and *Security* reduced to one line per rule.
+Everything else is **compressed or reflowed with every rule retained**, each
+rule ending in a pointer to where its detail lives: funnel rules 1–10 (wording
+tightened; all ten gates and the three CI-enforcement strings intact), the
+Harness Adapter tail prose (root-cause binding), the `/goal` closing prose,
+*Standing Orders* §1–§6 collapsed to one line per rule, *Repository Structure*
+and *Development Commands* reduced to their load-bearing lines plus a
+`README.md` pointer, and *Security* reduced to one line per rule.
 
-No rule was deleted. No fact was dropped: every cut fact has a published home (`README.md`, `docs/`, `PRD.md`, `kb/`), and each pointer left behind resolves.
+No rule was deleted. No fact was dropped: every cut fact has a published home
+(`README.md`, `docs/`, `PRD.md`, `kb/`), and each pointer left behind resolves.
 
 ### The tripwire
 
-`tests/unit/test_agents_md_budget.py` (unit tier) carries three hermetic tripwires, each registered here (this repo keeps no separate test-index file):
+`tests/unit/test_agents_md_budget.py` (unit tier) carries three hermetic
+tripwires, each registered here (this repo keeps no separate test-index file):
 
 | ID | Asserts | Closes |
 |----|---------|--------|
@@ -76,7 +119,9 @@ No rule was deleted. No fact was dropped: every cut fact has a published home (`
 | `AC-CTX-002` | `len(text) < $AGENTS_MD_CAP_CHARS` when the env var is set (int; malformed pin fails loudly), else 20,000 | *the cap is host-dependent* — a lower host-pinned cap becomes visible to CI when exported |
 | `AC-CTX-003` | `cap - len(text) >= 500` | *headroom is thin* — accretion fails loudly ~15 lines before the cap, not at it |
 
-Each failure message names the cap/floor, the lossy head-70/tail-20 middle truncation, and the collapse-plus-pointer remedy. All are stdlib-only file reads — no subprocess, no service import.
+Each failure message names the cap/floor, the lossy head-70/tail-20 middle
+truncation, and the collapse-plus-pointer remedy. All are stdlib-only file
+reads — no subprocess, no service import.
 
 ## Verification
 
@@ -113,28 +158,54 @@ bash tests/run.sh
 sha256sum AGENTS.md
 ```
 
-Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,460; the probe prints `verbatim True` with an empty warning list; the unit tier is green and the override probe turns AC-CTX-003 red as documented.
+Expected: `LC_ALL=C.UTF-8 wc -m` reports 19,460; the probe prints
+`verbatim True` with an empty warning list; the unit tier is green and the
+override probe turns AC-CTX-003 red as documented.
 
 ## What Works
 
-- `AGENTS.md` is delivered whole — 19,460 chars against a 20,000-char cap, with 540 chars (2.7%) of headroom, above the 500-char floor
-- The real prompt builder returns the file verbatim (`raw in out == True`) and queues **zero** `TRUNCATED` warnings, down from one at 29,598 chars
-- The five funnel/harness contract regions are byte-identical, the `sub` block instructions survive the footer dedupe byte-for-byte, and every tightened region retains all ten funnel rules, the three CI-enforcement strings (rules 3, 9, 10), the root-cause binding and the `/goal` phase prose
-- Every `§N` cross-reference used elsewhere in the repo (`§5`, `§6`, `§Security`, `§codegraph` — in `tests/run.sh`, `.github/workflows/ci.yml`, `README.md`, `docs/`) still resolves against the trimmed headings
-- All four harness entry-point symlinks resolve: `CLAUDE.md`, `.github/copilot-instructions.md`, `.claude/skills`, `.claude/plugins`
-- The unit tier is green, and the three tripwires make regression, a host-pinned cap, and headroom exhaustion loud instead of silent
-- The headroom floor is proven to bite: `AGENTS_MD_CAP_CHARS=19800` flips AC-CTX-003 red while 001/002 stay green
+- `AGENTS.md` is delivered whole — 19,460 chars against a 20,000-char cap, with
+  540 chars (2.7%) of headroom, above the 500-char floor
+- The real prompt builder returns the file verbatim (`raw in out == True`) and
+  queues **zero** `TRUNCATED` warnings, down from one at 29,598 chars
+- The five funnel/harness contract regions are byte-identical, the `sub` block
+  instructions survive the footer dedupe byte-for-byte, and every tightened
+  region retains all ten funnel rules, the three CI-enforcement strings (rules
+  3, 9, 10), the root-cause binding and the `/goal` phase prose
+- Every `§N` cross-reference used elsewhere in the repo (`§5`, `§6`,
+  `§Security`, `§codegraph` — in `tests/run.sh`, `.github/workflows/ci.yml`,
+  `README.md`, `docs/`) still resolves against the trimmed headings
+- All four harness entry-point symlinks resolve: `CLAUDE.md`,
+  `.github/copilot-instructions.md`, `.claude/skills`, `.claude/plugins`
+- The unit tier is green, and the three tripwires make regression, a host-pinned
+  cap, and headroom exhaustion loud instead of silent
+- The headroom floor is proven to bite: `AGENTS_MD_CAP_CHARS=19800` flips
+  AC-CTX-003 red while 001/002 stay green
 
 ## What Fails
 
-- **`wc -m` is locale-dependent:** under a non-UTF-8 locale (this container sets `LC_ALL=C`) `wc -m` silently counts **bytes** — a char check that reads `wc -m` is really a byte check. Use `LC_ALL=C.UTF-8 wc -m` or `len(text)` in Python; the tripwires assert in Python and are immune.
-- **Bytes are not the rule:** the guard measures characters. `wc -c` happens to pass today, but only the char count is binding — a file can be under in bytes and over in chars once it is non-ASCII enough.
+- **`wc -m` is locale-dependent:** under a non-UTF-8 locale (this container sets
+  `LC_ALL=C`) `wc -m` silently counts **bytes** — a char check that reads
+  `wc -m` is really a byte check. Use `LC_ALL=C.UTF-8 wc -m` or `len(text)` in
+  Python; the tripwires assert in Python and are immune.
+- **Bytes are not the rule:** the guard measures characters. `wc -c` happens to
+  pass today, but only the char count is binding — a file can be under in bytes
+  and over in chars once it is non-ASCII enough.
 
 ## Resolution
 
-- **`wc -m` is locale-dependent:** run it as `LC_ALL=C.UTF-8 wc -m`, or measure in Python with `len(text)` — which is what the tripwires do. Never trust a bare `wc -m` on a host whose locale is not UTF-8.
-- **Bytes vs chars:** treat `ls -l` / `wc -c` as a proxy only, and keep headroom so both readings pass.
+- **`wc -m` is locale-dependent:** run it as `LC_ALL=C.UTF-8 wc -m`, or measure
+  in Python with `len(text)` — which is what the tripwires do. Never trust a
+  bare `wc -m` on a host whose locale is not UTF-8.
+- **Bytes vs chars:** treat `ls -l` / `wc -c` as a proxy only, and keep headroom
+  so both readings pass.
 
 ## Verdict
 
-**works** — The file reaches the prompt byte-for-byte under the cap with zero truncation warnings, all contract regions and all ten funnel rules survive, and three hermetic tripwires now fail loudly on: regression over the cap (AC-CTX-001), a host-pinned cap exported into the environment (AC-CTX-002), and headroom exhaustion before the cap is reached (AC-CTX-003, floor 500 chars — current headroom 540). The locale dependence of `wc -m` remains an operator trap, but the binding assertions are Python-side and immune.
+**works** — The file reaches the prompt byte-for-byte under the cap with zero
+truncation warnings, all contract regions and all ten funnel rules survive, and
+three hermetic tripwires now fail loudly on: regression over the cap
+(AC-CTX-001), a host-pinned cap exported into the environment (AC-CTX-002), and
+headroom exhaustion before the cap is reached (AC-CTX-003, floor 500 chars —
+current headroom 540). The locale dependence of `wc -m` remains an operator
+trap, but the binding assertions are Python-side and immune.

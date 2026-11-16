@@ -4,14 +4,16 @@
 
 ## Context
 
-Karpathy's output-medium post recommends writing "80% of the way to ASD-STE100" — the
-aerospace controlled-language spec, softened. The repo adopted that rule for its own
-docs (`AGENTS.md` §7 rung 1), but the check was a one-off analysis in a session, not a
-repo artifact. A rule no script can run is a rule the next agent must rediscover.
+Karpathy's output-medium post recommends writing "80% of the way to
+ASD-STE100" — the aerospace controlled-language spec, softened. The repo adopted
+that rule for its own docs (`AGENTS.md` §7 rung 1), but the check was a one-off
+analysis in a session, not a repo artifact. A rule no script can run is a rule
+the next agent must rediscover.
 
-`[ASSUMPTION]` Scope is the rule subset that is machine-checkable without the ASD-STE100
-dictionary (never vendored — it is ASD's copyright): sentence-length limits, passive
-voice, and instruction density. That is the same "80%" framing the source post uses.
+`[ASSUMPTION]` Scope is the rule subset that is machine-checkable without the
+ASD-STE100 dictionary (never vendored — it is ASD's copyright): sentence-length
+limits, passive voice, and instruction density. That is the same "80%" framing
+the source post uses.
 
 ## Deliverable
 
@@ -19,10 +21,12 @@ voice, and instruction density. That is the same "80%" framing the source post u
 
 - Input: one or more markdown files (default: `docs/*.md`, `README.md`).
 - Strips code fences, tables, headings, list markers; splits prose into sentences.
-- Measures per doc: total sentences, sentences over the descriptive limit (25 words),
-  longest sentence, passive-voice constructions (`be` + past participle).
-- `--max-words N` (default 25), `--threshold P` (default 80): exit 0 when the share of
-  sentences within the limit is ≥ P%, else exit 1 and print every offender.
+- Measures per doc: total sentences, sentences over the descriptive limit (25
+  words), longest sentence, passive-voice constructions (`be` + past
+  participle).
+- `--max-words N` (default 25), `--threshold P` (default 80): exit 0 when the
+  share of sentences within the limit is ≥ P%, else exit 1 and print every
+  offender.
 - `--verbose`: print the per-file table even on success.
 
 `tests/unit/test_ste_audit.py` — hermetic unit tier (`AC-STE-0NN`):
@@ -43,12 +47,13 @@ voice, and instruction density. That is the same "80%" framing the source post u
 
 ## CI/CD gate
 
-The `unit` job runs the auditor against the real docs on every push/PR. A doc edit that
-drops the repo below 80% fails CI before merge — the doctrine's rung 1 becomes
-structural, like the §7 token tripwire.
+The `unit` job runs the auditor against the real docs on every push/PR. A doc
+edit that drops the repo below 80% fails CI before merge — the doctrine's rung 1
+becomes structural, like the §7 token tripwire.
 
 ## Source attribution
 
-Rule source: `kb/raw/articles/karpathy-output-medium-escalation.md` (the "80% of the
-way to ASD-STE100" phrasing) → `kb/concepts/output-medium-escalation.md` (rung 1).
-Licensing constraint (no dictionary vendoring): `docs/03-output-medium-doctrine.md`.
+Rule source: `kb/raw/articles/karpathy-output-medium-escalation.md` (the "80% of
+the way to ASD-STE100" phrasing) → `kb/concepts/output-medium-escalation.md`
+(rung 1). Licensing constraint (no dictionary vendoring):
+`docs/03-output-medium-doctrine.md`.

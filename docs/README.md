@@ -5,9 +5,12 @@
 > the same skill invocation that writes or updates a doc updates its row here.
 >
 > Scope: this file indexes the **empirical layer only**.
-> - Intent (`docs/prd/`) is indexed by [PRD.md](../PRD.md#quick-reference) — do not duplicate it here.
-> - Gaps (`docs/gaps/`) are transient and self-listing — see [docs/gaps/README.md](gaps/README.md).
-> - Knowledge (`kb/`) has its own llm-wiki catalog — see [kb/index.md](../kb/index.md).
+> - Intent (`docs/prd/`) is indexed by [PRD.md](../PRD.md#quick-reference) — do
+>   not duplicate it here.
+> - Gaps (`docs/gaps/`) are transient and self-listing — see
+>   [docs/gaps/README.md](gaps/README.md).
+> - Knowledge (`kb/`) has its own llm-wiki catalog — see
+>   [kb/index.md](../kb/index.md).
 
 ## Status Docs
 
@@ -19,8 +22,11 @@
 | 04 | [gen-env Script](04-gen-env-script.md) | works | 2026-10-03 | `scripts/gen-env.py`, `tests/unit/test_gen_env.py`, `.env.example` | [04-gen-env-script](prd/04-gen-env-script.md) | — |
 | 06 | [Quality Controls](06-quality-controls.md) | works | 2026-10-14 | `.github/workflows/{ci,sources-readonly}.yml`, `tests/unit/test_quality_controls.py`, `.github/{pull_request_template.md,dependabot.yml,CODEOWNERS}`, `SECURITY.md`, main-branch ruleset | [06-quality-controls](prd/06-quality-controls.md) | [06-quality-controls](gaps/06-quality-controls.md) |
 | 07 | [PR-Agent Live Run](08-pr-agent-live-run.md) | works | 2026-11-04 | `.github/workflows/pr-agent.yml`, `.pr_agent.toml`, `tests/unit/test_pr_agent_workflow.py`, GitHub vars/secrets `PR_AGENT_*`/`OPENAI_*`, Cloudflare zone bachkukkik.com | [07-pr-agent-optional](prd/07-pr-agent-optional.md) | — |
+| 09 | [Char-per-Line Audit](09-char-per-line-audit.md) | works | 2026-11-16 | `scripts/audit-chars.py`, `tests/unit/test_audit_chars.py`, `docs/**/*.md`, `README.md`, `AGENTS.md` | [09-char-per-line-audit](prd/09-char-per-line-audit.md) | — |
+| 10 | [File-Size Audit](10-file-size-audit.md) | works | 2026-11-16 | `scripts/audit-size.py`, `tests/unit/test_audit_size.py`, `git ls-files` scope | [10-file-size-audit](prd/10-file-size-audit.md) | — |
 
-**Verdict vocabulary** — copy the net verdict from the doc's own *Verdict* section:
+**Verdict vocabulary** — copy the net verdict from the doc's own *Verdict*
+section:
 
 | Verdict | Meaning |
 |---------|---------|
@@ -31,12 +37,12 @@
 
 ## Rules
 
-1. **Every `docs/NN-*.md` has exactly one row.** A doc with no row is invisible to the
-   next agent; a row with no doc is a lie. Both are defects.
+1. **Every `docs/NN-*.md` has exactly one row.** A doc with no row is invisible
+   to the next agent; a row with no doc is a lie. Both are defects.
 2. **`NN` is unique and shared across the funnel.** `docs/NN-slug.md`,
    `docs/prd/NN-*.md`, and `docs/gaps/NN-*.md` reuse the same number for the same
    topic, so an agent can walk intent → gap → reality by number alone.
-3. **`Updated` is the last *verification* date**, not the last text edit. Editing prose
-   does not refresh it; re-running the verification commands does.
+3. **`Updated` is the last *verification* date**, not the last text edit.
+   Editing prose does not refresh it; re-running the verification commands does.
 4. **A `stale` or `broken` verdict is a required read** before touching the code it
    covers — that is the point of this file.
