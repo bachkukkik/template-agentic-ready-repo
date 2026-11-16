@@ -72,4 +72,4 @@ jobs:
       # PR-Agent reads the PR and posts its review with this token.
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: qodo-ai/pr-agent@efdde4afe14aa401a3889012c7f3e9ef3081a430 # v0.49.0
+      - uses: qodo-ai/pr-agent@e673a02076ce09a4726c3d0c3cc85780e59ca52b # v0.50.0
