@@ -2,19 +2,20 @@
 
 > Funnel stage 4. Grounded in `kb/concepts/quality-controls.md` (overview),
 > `kb/concepts/github-merge-gates.md`, `kb/concepts/actions-hardening.md`,
-> `kb/concepts/scanning-without-advanced-security.md`, `kb/concepts/qc-test-tiers.md`.
-> Raw evidence: `kb/raw/articles/quality-controls-audit-dossier.md` (verified
-> inventory, 3 research tracks, 14-repo MIT/Apache peer survey).
+> `kb/concepts/scanning-without-advanced-security.md`,
+> `kb/concepts/qc-test-tiers.md`. Raw evidence:
+> `kb/raw/articles/quality-controls-audit-dossier.md` (verified inventory, 3
+> research tracks, 14-repo MIT/Apache peer survey).
 
 ## Problem
 
-The repo's quality controls are test-heavy but gate-free: three test tiers run in
-CI, yet 13/13 merged PRs had zero reviews and `main` has no branch protection —
-a direct `git push` bypasses every gate. Workflows inherit default token scope,
-pin actions by mutable tag, and there is no dependency scanning, governance file,
-or workflow linter. Peer repos (14 surveyed) ship all of these. Critically, the
-existing gates that DO exist are enforced; the missing ones must also land as
-**executable rules**, not prose.
+The repo's quality controls are test-heavy but gate-free: three test tiers run
+in CI, yet 13/13 merged PRs had zero reviews and `main` has no branch
+protection — a direct `git push` bypasses every gate. Workflows inherit default
+token scope, pin actions by mutable tag, and there is no dependency scanning,
+governance file, or workflow linter. Peer repos (14 surveyed) ship all of these.
+Critically, the existing gates that DO exist are enforced; the missing ones must
+also land as **executable rules**, not prose.
 
 ## Codification doctrine (the 80/20 rule)
 
@@ -45,13 +46,15 @@ are pure logic: file existence, grep patterns, pytest assertions).
 | AC-QC-011 | Branch protection/ruleset on `main`: require PR, require the aggregate gate check (strict), block force-push/deletion | [[github-merge-gates]] (Scorecard Tier-1 baseline) |
 | AC-QC-012 | The 80/20 codification split holds: every control in AC-QC-001..010 is enforced by a pytest assertion or CI job, not prose | [[quality-controls]] doctrine |
 
-**Deliberately NOT adopted** (peer data says no): gitleaks/trufflehog Actions jobs
-(0/14 peers; native secret scanning is free on public repos; the hand-rolled
-generic-shape regex job stays — it covers a class GitHub's free tier misses);
-required approvals ≥1 (structurally unsatisfiable for one human — revisit when a
-second reviewer exists); merge queue (org-only).
+**Deliberately NOT adopted** (peer data says no): gitleaks/trufflehog Actions
+jobs (0/14 peers; native secret scanning is free on public repos; the
+hand-rolled generic-shape regex job stays — it covers a class GitHub's free tier
+misses); required approvals ≥1 (structurally unsatisfiable for one human —
+revisit when a second reviewer exists); merge queue (org-only).
 
-_Verify: `tests/unit/test_quality_controls.py` (all AC-QC-0NN unit assertions) + `.github/workflows/ci.yml` `qc-gate` job (AC-QC-009) + `gh api repos/.../rulesets` (AC-QC-011, verified post-merge)._
+_Verify: `tests/unit/test_quality_controls.py` (all AC-QC-0NN unit
+assertions) + `.github/workflows/ci.yml` `qc-gate` job
+(AC-QC-009) + `gh api repos/.../rulesets` (AC-QC-011, verified post-merge)._
 
 ## Test Mapping
 
@@ -69,13 +72,14 @@ test.
 
 ## Confidence
 
-High — every control is backed by verified current-state evidence plus first-hand
-peer-repo data; adoption threshold (≥60% peer consensus or published baseline) met
-by every adopted control.
+High — every control is backed by verified current-state evidence plus
+first-hand peer-repo data; adoption threshold (≥60% peer consensus or published
+baseline) met by every adopted control.
 
 ## Assumptions
 
 - [ASSUMPTION] Single-maintainer workflow continues: self-merge after green CI is
   the intended path; required approvals intentionally off.
-- [ASSUMPTION] zizmor/actionlint run via pinned third-party actions; if supply-chain
-  posture of those actions degrades, fall back to pipx/git-ref installs inside the job.
+- [ASSUMPTION] zizmor/actionlint run via pinned third-party actions; if
+  supply-chain posture of those actions degrades, fall back to pipx/git-ref
+  installs inside the job.

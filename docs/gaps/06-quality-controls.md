@@ -3,7 +3,8 @@
 **Kind:** `prd ↔ code`
 **Opened:** 2026-10-14
 **PRD:** [docs/prd/06-quality-controls.md](../prd/06-quality-controls.md)
-**Grounding:** `kb/raw/articles/quality-controls-audit-dossier.md` (verified inventory)
+**Grounding:** `kb/raw/articles/quality-controls-audit-dossier.md` (verified
+inventory)
 
 ## Observed divergence
 

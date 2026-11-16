@@ -36,6 +36,12 @@ jobs:
           python-version: "3.12"
       - run: pip install --no-cache-dir -r tests/requirements.txt
       - run: python3 -m pytest tests/unit -v
+      - name: Machine gates
+        run: |
+          set -euo pipefail
+          python3 scripts/audit_pyramid.py
+          python3 scripts/audit-chars.py
+          python3 scripts/audit-size.py
 
   # ═══════════════════════════════════════════════════════════════
   # Tier 2: integration — cross-process / persistence, no container
